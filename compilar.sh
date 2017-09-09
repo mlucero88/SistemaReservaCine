@@ -18,19 +18,19 @@ for bin in ${BINARIOS[@]}; do
 
 	case "${bin}" in
 		environment)
-			g++ -I${SRC_DIR} ${COMMON_DIR}/ipc/msg_queue.cpp ${SRC_DIR}/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}
+			g++ -std=c++11 -I${SRC_DIR} ${COMMON_DIR}/ipc/msg_queue.cpp ${SRC_DIR}/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}
 			;;
 		cliente)
-			g++ -I${SRC_DIR} ${COMMON_DIR}/ipc/msg_queue.cpp ${COMMON_DIR}/canal_comunicacion.cpp ${SRC_DIR}/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}
+			g++ -std=c++11 -I${SRC_DIR} ${COMMON_DIR}/ipc/msg_queue.cpp ${COMMON_DIR}/canal.cpp ${SRC_DIR}/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}
 			;;
 		cine_login)
-			g++ -I${SRC_DIR} ${COMMON_DIR}/ipc/msg_queue.cpp ${COMMON_DIR}/canal_comunicacion.cpp ${SRC_DIR}/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}
+			g++ -std=c++11 -I${SRC_DIR} ${COMMON_DIR}/ipc/msg_queue.cpp ${COMMON_DIR}/canal.cpp ${SRC_DIR}/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}
 			;;
 		cine)
-			g++ -I${SRC_DIR} ${SRC_DIR}/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}
+			g++ -std=c++11 -I${SRC_DIR} ${SRC_DIR}/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}
 			;;
 		admin)
-			g++ -I${SRC_DIR} ${SRC_DIR}/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}
+			g++ -std=c++11 -I${SRC_DIR} ${SRC_DIR}/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}
 			;;
 	esac
 	

@@ -2,7 +2,7 @@
 #include <cstring>
 #include <iostream>
 
-#include "common/ipc/msg_queue.h"
+#include "../common/ipc/msg_queue.h"
 
 int main(int argc, char* argv[]) {
 	if (argc != 2) {

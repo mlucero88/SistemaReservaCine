@@ -2,7 +2,13 @@
 #include <cstring>
 #include <iostream>
 
-#include "common/canal_comunicacion.h"
+#include "../common/canal.h"
+#include "../common/constantes.h"
+#include "../common/operaciones.h"
+#include "../common/ipc/msg_queue.h"
+#include <signal.h>
+#include <sys/msg.h>
+#include <unistd.h>
 
 void alarm_handler(int) {
 }
@@ -21,31 +27,39 @@ int main() {
 	entidad_t cine = { .proceso = entidad_t::CINE, .pid = getpid() };
 	entidad_t cliente = { .proceso = entidad_t::CLIENTE, .pid = -1 };
 
-	canal_comunicacion* canal_cine_cli = canal_comunicacion_crear(cine, cliente);
+    canal *canal_cine_cli = canal_crear(cine, cliente);
 	if (canal_cine_cli == NULL) {
 		std::cerr << "Error al crear canal de comunicacion entre cine y cliente" << std::endl;
 		exit(1);
 	}
 
-//	while (true) {
-//		struct msg m;
-//		int r = msgrcv(msg_cli_cine, &m, sizeof(m) - sizeof(long), LOGIN, 0);
-//		if (r == -1) {
-//			// ERROR
-//			perror("Error recibir cli_cine:");
-//			exit(1);
-//		}
-//		if (m.type == LOGIN) {
-//			// Crear el otro cine
-//			if (fork() == 0) {
-//				exec("", m.op.login.id);
-//				perror("Error exec");
-//				exit(1);
-//			}
-//		}
-//	}
+    if (fork() == 0) {
+        execl("./admin", "admin", NULL);
+        perror("Error al iniciar el admin");
+        exit(1);
+    }
 
-	canal_comunicacion_destruir(canal_cine_cli);
-	return 0;
+    while (true) {
+        mensaje_t msg;
+        msg.tipo = LOGIN;
 
+        printf("Esperando mensaje de login\n");
+        int r = canal_recibir(canal_cine_cli, msg, LOGIN_MSG_TYPE);
+        if (r != -1) {
+            // Creo el proceso que se va a comunicar con este cliente
+            if (fork() == 0) {
+                // id del cliente que se logueó, puede o no ser el pid
+                int cli_id = msg.operacion.login.cli_id;
+                char cli_id_str[12];
+                sprintf(cli_id_str, "%d", cli_id);
+                execl("./cine", cli_id_str, NULL);
+                perror("Error al crear al proceso hijo cine");
+                exit(1);
+            }
+        } else {
+            perror("Error al recibir mensaje de login");
+            exit(1);
+        }
+
+    }
 }
