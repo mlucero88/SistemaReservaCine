@@ -25,7 +25,7 @@ static int elegir_asientos_rand(const int *asiento_habilitado, int cantidad_asie
 
     while (rounds > 0 && intentos > 0) {
         id_asiento = rand() % cantidad_asientos;
-        if (asiento_habilitado[id_asiento]) {
+        if (asiento_habilitado[id_asiento] == DISPONIBLE) {
             /* Reviso que no lo haya elegido en un round anterior */
             bool ya_elegido = false;
             for (int j = 0; j < i; ++j) {
@@ -96,6 +96,12 @@ mensaje_t recibir_info_sala(canal *canal_cli_cine) {
         exit(1);
     }
     printf("[%i] Recibí INFORMAR_ASIENTOS\n", getpid());
+    printf("Hay %i asientos en total en la sala\n", msg.operacion.informar_asientos.cantidad_asientos);
+    for (int j = 0; j < MAX_ASIENTOS; j++) {
+        printf("%c", msg.operacion.informar_asientos.asiento_habilitado[j] == DISPONIBLE ? 'O' : 'X');
+    }
+    printf("\n");
+
     return msg;
 }
 
@@ -108,12 +114,18 @@ void elegir_asientos(canal *canal_cli_cine, mensaje_t msg_prev) {
     mensaje_t msg;
     msg.tipo = ELEGIR_ASIENTOS;
     msg.mtype = cli_id;
+    msg.operacion.elegir_asientos.nro_sala = msg_prev.operacion.informar_asientos.nro_sala;
     memcpy(msg.operacion.elegir_asientos.asientos_elegidos, asientos, sizeof(int) * cantidad);
     msg.operacion.elegir_asientos.cantidad_elegidos = cantidad;
     printf("[%i] ELEGIR_ASIENTOS\n", getpid());
     if (!canal_enviar(canal_cli_cine, msg)) {
         std::cerr << "Error al enviar mensaje de LOGIN: " << strerror(errno) << std::endl;
         exit(1);
+    }
+    printf("Reservar %i asientos\n", cantidad);
+    printf("Asientos:\n");
+    for (int i = 0; i < cantidad; i++) {
+        printf("%i\n", msg.operacion.elegir_asientos.asientos_elegidos[i]);
     }
 }
 
@@ -125,6 +137,12 @@ void recibir_info_reserva(canal *canal_cli_cine) {
         exit(1);
     }
     printf("[%i] Recibí INFORMAR_RESERVA\n", getpid());
+    int nro_reservados = msg.operacion.informar_reserva.cantidad_reservados;
+    printf("Se reservaron %i asientos\n", nro_reservados);
+    printf("Se reservaron los siguientes asientos:\n");
+    for (int i = 0; i < nro_reservados; i++) {
+        printf("%i\n", msg.operacion.informar_reserva.asientos_reservados[i]);
+    }
 }
 
 void confirmar_reserva(canal *canal_cli_cine) {

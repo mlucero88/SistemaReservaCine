@@ -21,11 +21,13 @@ typedef union {
 	struct {
         int asiento_habilitado[MAX_ASIENTOS];
         int cantidad_asientos;
+        int nro_sala;
 	} informar_asientos;
 
 	struct {
         int asientos_elegidos[MAX_ASIENTOS_RESERVADOS];
         int cantidad_elegidos;
+        int nro_sala;  // Por ahora, mando el numero de sala otra vez.
 	} elegir_asientos;
 
 	struct {

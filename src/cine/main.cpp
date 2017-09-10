@@ -58,6 +58,7 @@ int main(int argc, char *argv[]) {
         printf("[%i] Esperando respuesta del admin para ELEGIR_ASIENTOS\n", getpid());
         canal_recibir(canal_cine_admin, msg, cine_id);
         // Le paso al cliente la informacion de la sala
+        printf("[%i] Recibí respuesta del admin para ELEGIR_ASIENTOS\n", getpid());
         msg.mtype = cli_id;
         canal_enviar(canal_cine_cli, msg);
 

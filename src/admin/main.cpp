@@ -4,15 +4,13 @@
 #include "../common/operaciones.h"
 #include "../common/ipc/msg_queue.h"
 
-void informar_asientos(mensaje_t *m, canal *canal_cine_admin, int cine_id) {
-    int *a = m->operacion.informar_asientos.asiento_habilitado;
-    a[0] = 1;
-    a[1] = 1;
-    a[2] = 1;
-    a[3] = 1;
-    a[4] = 1;
-    m->operacion.informar_asientos.cantidad_asientos = 5;
+void informar_asientos(mensaje_t *m, canal *canal_cine_admin, int cine_id, int asientos_salas[MAX_SALAS][MAX_ASIENTOS],
+                       int n_asientos_salas[MAX_SALAS]) {
+    int nro_sala = m->operacion.elegir_sala.nro_sala;
+    memcpy(m->operacion.informar_asientos.asiento_habilitado, asientos_salas[nro_sala], MAX_ASIENTOS * sizeof(int));
+    m->operacion.informar_asientos.cantidad_asientos = n_asientos_salas[nro_sala];
     m->tipo = INFORMAR_ASIENTOS;
+    m->operacion.informar_asientos.nro_sala = nro_sala;
     printf("[ADMIN] Enviando INFORMAR_ASIENTOS\n");
     canal_enviar(canal_cine_admin, *m);
 }
@@ -24,17 +22,29 @@ void informar_salas(mensaje_t *m, canal *canal_cine_admin, int cine_id, int n_sa
     canal_enviar(canal_cine_admin, *m);
 }
 
-void informar_reserva(mensaje_t *m, canal *canal_cine_admin, int cine_id) {
+void informar_reserva(mensaje_t *m, canal *canal_cine_admin, int cine_id, int asientos_salas[MAX_SALAS][MAX_ASIENTOS],
+                      int n_asientos_salas[MAX_SALAS]) {
     mensaje_t msg;
     msg.tipo = INFORMAR_RESERVA;
     msg.mtype = cine_id;
-    int *b = msg.operacion.informar_reserva.asientos_reservados;
-    b[0] = 5;
-    b[1] = 5;
-    b[2] = 5;
-    b[3] = 5;
-    b[4] = 5;
-    msg.operacion.informar_reserva.cantidad_reservados = 5;
+
+    int nro_asientos_pedidos = m->operacion.elegir_asientos.cantidad_elegidos;
+    int asientos_reservados = 0;
+    int nro_sala = m->operacion.elegir_asientos.nro_sala; // ***
+    printf("[ADMIN] Veo si se pueden reservar %i asients en la sala %i\n", nro_asientos_pedidos, nro_sala + 1);
+    for (int i = 0; i < nro_asientos_pedidos; i++) {
+        int nro_asiento = m->operacion.elegir_asientos.asientos_elegidos[i];
+        if (asientos_salas[nro_sala][nro_asiento] == DISPONIBLE) {
+            msg.operacion.informar_reserva.asientos_reservados[i] = 1;
+            asientos_salas[nro_sala][nro_asiento] = RESERVADO;
+            asientos_reservados++;
+            printf("[ADMIN] Un asiento reservado: %i\n", nro_asiento);
+        } else {
+            msg.operacion.informar_reserva.asientos_reservados[i] = 0;
+        }
+    }
+    msg.operacion.informar_reserva.cantidad_reservados = asientos_reservados;
+
     printf("[ADMIN] Enviando INFORMAR_RESERVA\n");
     canal_enviar(canal_cine_admin, msg);
 }
@@ -118,13 +128,13 @@ int main(int argc, char *argv[]) {
 
         if (msg.tipo == ELEGIR_SALA) {
             printf("[ADMIN] INFORMAR_ASIENTOS para %i\n", cine_id);
-            informar_asientos(&msg, canal_cine_admin, cine_id);
+            informar_asientos(&msg, canal_cine_admin, cine_id, asientos_salas, n_asientos_salas);
 
         }
 
         if (msg.tipo == ELEGIR_ASIENTOS) {
             printf("[ADMIN] INFORMAR_RESERVA para %i\n", cine_id);
-            informar_reserva(&msg, canal_cine_admin, cine_id);
+            informar_reserva(&msg, canal_cine_admin, cine_id, asientos_salas, n_asientos_salas);
 
         }
 
