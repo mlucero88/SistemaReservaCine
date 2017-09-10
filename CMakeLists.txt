@@ -4,7 +4,7 @@ project(proyecto)
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ./bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 
 set(ADMIN_FILES src/admin/main.cpp)
 set(CLIENT_FILES src/cliente/main.cpp)

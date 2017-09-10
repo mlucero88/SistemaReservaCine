@@ -18,6 +18,10 @@
 #define PAGAR 9
 #define PAGO_OK 10
 
+#define NO_DISPONIBLE (-1) // El asiento no existe en la sala
+#define DISPONIBLE 0 // El asiento se puede reservar
+#define RESERVADO 1 // El asiento ya está reservado
+
 
 
 namespace {

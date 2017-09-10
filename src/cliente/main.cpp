@@ -66,6 +66,11 @@ mensaje_t recibir_info_salas(canal *canal_cli_cine) {
         exit(1);
     }
     printf("[%i] Recibí INFORMAR_SALAS\n", getpid());
+    printf("Cantidad de salas: %i\n", msg.operacion.informar_salas.cantidad_salas);
+    for (int i = 0; i < msg.operacion.informar_salas.cantidad_salas; i++) {
+        printf("SALA %i -> %i\n", i + 1, msg.operacion.informar_salas.asientos_por_sala[i]);
+    }
+
     return msg;
 }
 

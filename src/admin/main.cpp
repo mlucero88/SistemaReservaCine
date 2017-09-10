@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstring>
 #include "../common/canal.h"
 #include "../common/operaciones.h"
 #include "../common/ipc/msg_queue.h"
@@ -16,14 +17,9 @@ void informar_asientos(mensaje_t *m, canal *canal_cine_admin, int cine_id) {
     canal_enviar(canal_cine_admin, *m);
 }
 
-void informar_salas(mensaje_t *m, canal *canal_cine_admin, int cine_id) {
-    int *a = m->operacion.informar_salas.asientos_por_sala;
-    a[0] = 5;
-    a[1] = 5;
-    a[2] = 5;
-    a[3] = 5;
-    a[4] = 5;
-    m->operacion.informar_salas.cantidad_salas = 5;
+void informar_salas(mensaje_t *m, canal *canal_cine_admin, int cine_id, int n_salas, int n_asientos_salas[MAX_SALAS]) {
+    memcpy(m->operacion.informar_salas.asientos_por_sala, n_asientos_salas, MAX_SALAS * sizeof(int));
+    m->operacion.informar_salas.cantidad_salas = n_salas;
     printf("[ADMIN] Enviando INFORMAR_SALAS\n");
     canal_enviar(canal_cine_admin, *m);
 }
@@ -61,7 +57,43 @@ void pago_ok(mensaje_t *m, canal *canal_cine_admin, int cine_id) {
     canal_enviar(canal_cine_admin, msg);
 }
 
+void cargar_datos(int n_salas, int n_asientos_salas[MAX_SALAS], int asientos_salas[MAX_SALAS][MAX_ASIENTOS]) {
+
+    for (int i = 0; i < n_salas; i++) {
+        int n_asientos = rand() % MAX_ASIENTOS;
+        n_asientos_salas[i] = n_asientos;
+        for (int j = 0; j < n_asientos; j++) {
+            asientos_salas[i][j] = DISPONIBLE;
+        }
+        for (int j = n_asientos; j < MAX_ASIENTOS; j++) {
+            asientos_salas[i][j] = NO_DISPONIBLE;
+        }
+    }
+    for (int i = n_salas; i < MAX_SALAS; i++) {
+        n_asientos_salas[i] = 0;
+        for (int j = 0; j < MAX_ASIENTOS; j++) {
+            asientos_salas[i][j] = NO_DISPONIBLE;
+        }
+    }
+}
+
 int main(int argc, char *argv[]) {
+
+    int n_salas = rand() % MAX_SALAS; // Cantidad de salas que hay en total
+    printf("Cantidad de salas: %i\n", n_salas);
+    int n_asientos_salas[MAX_SALAS]; // Cantidad de asientos que hay en cada sala
+    int asientos_salas[MAX_SALAS][MAX_ASIENTOS]; // Asientos disponibles/ocupados en cada sala
+
+    cargar_datos(n_salas, n_asientos_salas, asientos_salas);
+
+    for (int i = 0; i < MAX_SALAS; i++) {
+        printf("SALA %i -> %i\n", i + 1, n_asientos_salas[i]);
+        for (int j = 0; j < MAX_ASIENTOS; j++) {
+            printf("%c", asientos_salas[i][j] == DISPONIBLE ? 'O' : 'X');
+        }
+        printf("\n");
+    }
+
     printf("Iniciado el admin\n");
     entidad_t cine = {.proceso = entidad_t::CINE, .pid = getpid()};
     entidad_t admin = {.proceso = entidad_t::ADMIN, .pid = -1};
@@ -80,7 +112,7 @@ int main(int argc, char *argv[]) {
         printf("[ADMIN] Recibí mensaje con tipo %i y mtype %i\n", msg.tipo, msg.mtype);
         if (msg.tipo == INFORMAR_SALAS) {
             printf("[ADMIN] INFORMAR_SALAS para %i\n", cine_id);
-            informar_salas(&msg, canal_cine_admin, cine_id);
+            informar_salas(&msg, canal_cine_admin, cine_id, n_salas, n_asientos_salas);
 
         }
 
