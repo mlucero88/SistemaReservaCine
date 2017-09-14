@@ -1,9 +1,38 @@
 #include <iostream>
+#include <signal.h>
 #include "../common/canal.h"
 #include "../common/operaciones.h"
 #include "../common/ipc/msg_queue.h"
 
+#define TIMEOUT 60
+
+void alarm_handler(int) {
+    // avisarle al cliente para que se cierre
+    mensaje_t msg;
+    msg.tipo = MSG_TIMEOUT;
+    msg.mtype = cli_id;
+    msg.op; // No hace falta nada más
+    canal_enviar(canal_cine_cli, msg);
+    // avisarle al admin para que cancele las reservas si se hizo alguna
+    msg.mtype = cli_id;
+    canal_enviar(canal_cine_admin, msg);
+}
+
+
 int main(int argc, char *argv[]) {
+    struct sigaction sigchld, sigalarm;
+    sigchld.sa_handler = SIG_DFL;
+    sigchld.sa_flags = SA_NOCLDWAIT;
+    sigemptyset(&sigchld.sa_mask);
+    sigaction(SIGCHLD, &sigchld, NULL);
+
+    sigalarm.sa_handler = alarm_handler;
+    sigemptyset(&sigalarm.sa_mask);
+    sigaction(SIGALRM, &sigalarm, NULL);
+
+    alarm(TIMEOUT);
+
+
     entidad_t cine = {.proceso = entidad_t::CINE, .pid = getpid()};
     entidad_t admin = {.proceso = entidad_t::ADMIN, .pid = -1};
     int cli_id = atoi(argv[0]); // id del cliente

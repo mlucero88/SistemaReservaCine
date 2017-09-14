@@ -12,7 +12,7 @@ typedef enum {
 typedef struct {
 	long mtype;
     int tipo; // cual de todas las operaciones es!
-	operacion_t operacion;
+    operacion_t op;
 } mensaje_t;
 
 /* Usados solamente por proceso environment */

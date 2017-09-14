@@ -45,10 +45,14 @@ static int elegir_asientos_rand(const int *asiento_habilitado, int cantidad_asie
     return i;
 }
 
+void handle_timout() {
+    //...
+}
+
 void login(canal *canal_cli_cine) {
     mensaje_t msg;
     msg.tipo = LOGIN;
-    msg.operacion.login.cli_id = getpid();
+    msg.op.login.cli_id = getpid();
     msg.mtype = LOGIN_MSG_TYPE;
     printf("[%i] LOGIN\n", getpid());
     if (!canal_enviar(canal_cli_cine, msg)) {
@@ -62,13 +66,16 @@ mensaje_t recibir_info_salas(canal *canal_cli_cine) {
     mensaje_t msg;
 
     if (!canal_recibir(canal_cli_cine, msg, cli_id) || msg.tipo != INFORMAR_SALAS) {
+        if (msg.tipo == TIMEOUT) {
+            handle_timout();
+        }
         std::cerr << "Error al recibir mensaje de INFORMAR_SALAS: " << strerror(errno) << std::endl;
         exit(1);
     }
     printf("[%i] Recibí INFORMAR_SALAS\n", getpid());
-    printf("Cantidad de salas: %i\n", msg.operacion.informar_salas.cantidad_salas);
-    for (int i = 0; i < msg.operacion.informar_salas.cantidad_salas; i++) {
-        printf("SALA %i -> %i\n", i + 1, msg.operacion.informar_salas.asientos_por_sala[i]);
+    printf("Cantidad de salas: %i\n", msg.op.informar_salas.cantidad_salas);
+    for (int i = 0; i < msg.op.informar_salas.cantidad_salas; i++) {
+        printf("SALA %i -> %i\n", i + 1, msg.op.informar_salas.asientos_por_sala[i]);
     }
 
     return msg;
@@ -79,8 +86,8 @@ void elegir_sala(canal *canal_cli_cine, mensaje_t msg_prev) {
     mensaje_t msg;
     msg.tipo = ELEGIR_SALA;
     msg.mtype = cli_id;
-    msg.operacion.elegir_sala.nro_sala = elegir_sala_rand(msg_prev.operacion.informar_salas.asientos_por_sala,
-                                                          msg_prev.operacion.informar_salas.cantidad_salas);
+    msg.op.elegir_sala.nro_sala = elegir_sala_rand(msg_prev.op.informar_salas.asientos_por_sala,
+                                                   msg_prev.op.informar_salas.cantidad_salas);
     printf("[%i] ELEGIR_SALA\n", getpid());
     if (!canal_enviar(canal_cli_cine, msg)) {
         std::cerr << "Error al enviar mensaje de ELEGIR_SALA: " << strerror(errno) << std::endl;
@@ -92,13 +99,16 @@ mensaje_t recibir_info_sala(canal *canal_cli_cine) {
     mensaje_t msg;
     int cli_id = getpid();
     if (!canal_recibir(canal_cli_cine, msg, cli_id) || msg.tipo != INFORMAR_ASIENTOS) {
+        if (msg.tipo == TIMEOUT) {
+            handle_timout();
+        }
         std::cerr << "Error al recibir mensaje de INFORMAR_ASIENTOS" << std::endl;
         exit(1);
     }
     printf("[%i] Recibí INFORMAR_ASIENTOS\n", getpid());
-    printf("Hay %i asientos en total en la sala\n", msg.operacion.informar_asientos.cantidad_asientos);
+    printf("Hay %i asientos en total en la sala\n", msg.op.info_asientos.cantidad_asientos);
     for (int j = 0; j < MAX_ASIENTOS; j++) {
-        printf("%c", msg.operacion.informar_asientos.asiento_habilitado[j] == DISPONIBLE ? 'O' : 'X');
+        printf("%c", msg.op.info_asientos.asiento_habilitado[j] == DISPONIBLE ? 'O' : 'X');
     }
     printf("\n");
 
@@ -108,15 +118,15 @@ mensaje_t recibir_info_sala(canal *canal_cli_cine) {
 void elegir_asientos(canal *canal_cli_cine, mensaje_t msg_prev) {
     int cli_id = getpid();
     int asientos[MAX_ASIENTOS_RESERVADOS];
-    int cantidad = elegir_asientos_rand(msg_prev.operacion.informar_asientos.asiento_habilitado,
-                                        msg_prev.operacion.informar_asientos.cantidad_asientos,
+    int cantidad = elegir_asientos_rand(msg_prev.op.info_asientos.asiento_habilitado,
+                                        msg_prev.op.info_asientos.cantidad_asientos,
                                         asientos);
     mensaje_t msg;
     msg.tipo = ELEGIR_ASIENTOS;
     msg.mtype = cli_id;
-    msg.operacion.elegir_asientos.nro_sala = msg_prev.operacion.informar_asientos.nro_sala;
-    memcpy(msg.operacion.elegir_asientos.asientos_elegidos, asientos, sizeof(int) * cantidad);
-    msg.operacion.elegir_asientos.cantidad_elegidos = cantidad;
+    msg.op.elegir_asientos.nro_sala = msg_prev.op.info_asientos.nro_sala;
+    memcpy(msg.op.elegir_asientos.asientos_elegidos, asientos, sizeof(int) * cantidad);
+    msg.op.elegir_asientos.cantidad_elegidos = cantidad;
     printf("[%i] ELEGIR_ASIENTOS\n", getpid());
     if (!canal_enviar(canal_cli_cine, msg)) {
         std::cerr << "Error al enviar mensaje de LOGIN: " << strerror(errno) << std::endl;
@@ -125,7 +135,7 @@ void elegir_asientos(canal *canal_cli_cine, mensaje_t msg_prev) {
     printf("Reservar %i asientos\n", cantidad);
     printf("Asientos:\n");
     for (int i = 0; i < cantidad; i++) {
-        printf("%i\n", msg.operacion.elegir_asientos.asientos_elegidos[i]);
+        printf("%i\n", msg.op.elegir_asientos.asientos_elegidos[i]);
     }
 }
 
@@ -133,15 +143,18 @@ void recibir_info_reserva(canal *canal_cli_cine) {
     mensaje_t msg;
     int cli_id = getpid();
     if (!canal_recibir(canal_cli_cine, msg, cli_id) || msg.tipo != INFORMAR_RESERVA) {
+        if (msg.tipo == TIMEOUT) {
+            handle_timout();
+        }
         std::cerr << "Error al recibir mensaje de INFORMAR_RESERVA" << std::endl;
         exit(1);
     }
     printf("[%i] Recibí INFORMAR_RESERVA\n", getpid());
-    int nro_reservados = msg.operacion.informar_reserva.cantidad_reservados;
+    int nro_reservados = msg.op.informar_reserva.cantidad_reservados;
     printf("Se reservaron %i asientos\n", nro_reservados);
     printf("Se reservaron los siguientes asientos:\n");
     for (int i = 0; i < nro_reservados; i++) {
-        printf("%i\n", msg.operacion.informar_reserva.asientos_reservados[i]);
+        printf("%i\n", msg.op.informar_reserva.asientos_reservados[i]);
     }
 }
 
@@ -150,7 +163,7 @@ void confirmar_reserva(canal *canal_cli_cine) {
     int cli_id = getpid();
     msg.tipo = CONFIRMAR_RESERVA;
     msg.mtype = cli_id;
-    msg.operacion.confirmar_reserva.reserva_confirmada = 1; // ((rand() % 10) > 0);    /* 9/10 de ser confirmada */
+    msg.op.confirmar_reserva.reserva_confirmada = 1; // ((rand() % 10) > 0);    /* 9/10 de ser confirmada */
     printf("[%i] CONFIRMAR_RESERVA\n", getpid());
     if (!canal_enviar(canal_cli_cine, msg)) {
         std::cerr << "Error al enviar mensaje de CONFIRMAR_RESERVA: " << strerror(errno) << std::endl;
@@ -163,6 +176,9 @@ void recibir_info_pago(canal *canal_cli_cine) {
     mensaje_t msg;
     int cli_id = getpid();
     if (!canal_recibir(canal_cli_cine, msg, cli_id) || msg.tipo != INFORMAR_PAGO) {
+        if (msg.tipo == TIMEOUT) {
+            handle_timout();
+        }
         std::cerr << "Error al recibir mensaje de INFORMAR_PAGO" << std::endl;
         exit(1);
     }
@@ -177,7 +193,7 @@ void pagar(canal *canal_cli_cine) {
     /* Envio pago */
     msg.tipo = PAGAR;
     msg.mtype = cli_id;
-    msg.operacion.pagar.pago = msg.operacion.informar_pago.precio;
+    msg.op.pagar.pago = msg.op.informar_pago.precio;
     printf("[%i] PAGAR\n", getpid());
     if (!canal_enviar(canal_cli_cine, msg)) {
         std::cerr << "Error al enviar mensaje de PAGAR: " << strerror(errno) << std::endl;
@@ -189,6 +205,9 @@ void recibir_pago_ok(canal *canal_cli_cine) {
     mensaje_t msg;
     int cli_id = getpid();
     if (!canal_recibir(canal_cli_cine, msg, cli_id) || msg.tipo != PAGO_OK) {
+        if (msg.tipo == TIMEOUT) {
+            handle_timout();
+        }
         std::cerr << "Error al recibir mensaje de INFORMAR_PAGO" << std::endl;
         exit(1);
     }
@@ -215,7 +234,7 @@ int main() {
 
     msg = recibir_info_salas(canal_cli_cine);
 
-    // Elegir una sala de las que recibir antes
+    // Elegir una sala de las que recibi antes
     elegir_sala(canal_cli_cine, msg);
 
     msg = recibir_info_sala(canal_cli_cine);
