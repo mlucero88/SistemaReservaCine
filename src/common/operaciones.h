@@ -22,7 +22,7 @@ typedef union {
         int asiento_habilitado[MAX_ASIENTOS];
         int cantidad_asientos;
         int nro_sala;
-	} informar_asientos;
+    } info_asientos;
 
 	struct {
         int asientos_elegidos[MAX_ASIENTOS_RESERVADOS];

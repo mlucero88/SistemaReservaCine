@@ -10,19 +10,8 @@
 #include <sys/msg.h>
 #include <unistd.h>
 
-void alarm_handler(int) {
-}
 
 int main() {
-	struct sigaction sigchld, sigalarm;
-	sigchld.sa_handler = SIG_DFL;
-	sigchld.sa_flags = SA_NOCLDWAIT;
-	sigemptyset(&sigchld.sa_mask);
-	sigaction(SIGCHLD, &sigchld, NULL);
-
-	sigalarm.sa_handler = alarm_handler;
-	sigemptyset(&sigalarm.sa_mask);
-	sigaction(SIGALRM, &sigalarm, NULL);
 
 	entidad_t cine = { .proceso = entidad_t::CINE, .pid = getpid() };
 	entidad_t cliente = { .proceso = entidad_t::CLIENTE, .pid = -1 };
@@ -49,7 +38,7 @@ int main() {
             // Creo el proceso que se va a comunicar con este cliente
             if (fork() == 0) {
                 // id del cliente que se logueó, puede o no ser el pid
-                int cli_id = msg.operacion.login.cli_id;
+                int cli_id = msg.op.login.cli_id;
                 char cli_id_str[12];
                 sprintf(cli_id_str, "%d", cli_id);
                 execl("./cine", cli_id_str, NULL);
