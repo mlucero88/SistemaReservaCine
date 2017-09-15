@@ -1,0 +1,29 @@
+Poner colores en printf
+
+hacer q el cliente avance con enters
+
+hacer directiva __DEBUG para imprimir mensajes de cola (o sea sacar un poco la cantidad de printf para una presentacion)
+
+Poner mas info en los printf de la operacion (q se entiendea bien el flow para la presentacion)
+
+diagrama de secuencia y diagrama de arquitectura (procesos + mecanismos ipc)
+
+alarma de tiempo de sesion
+
+mover la alarma a cine hijo
+
+en timeout, avisar al admin de liberar reserva (si hubo), y mandar un "chau me desconecte" al cliente
+
+hacer nuevo tipo de mensaje del admin a los clientes (pasando por el cine) avisando cuando un cliente pide (antes de confirmar) asientos, para avisarle a los clientes en esa sala que hay asientos q se ocuparon
+
+|---> para hacer esto, el admin tiene q tener una tabla donde, al haber un mensaje "elegir sala", se agrega una entrada del id del cine q la mando, y cuando le llega la confirmacion del pago o un timeout, borra esa entrada (posiblemente un multimap)
+
+hacer 5ta cola entre admin y cliente_async para enviar la info de asientos reservados.
+
+hacer cliente asincronico. el chabon se pone en recepcion de la 5ta cola y cuando le llega notificacion, lo escribe en la mem compartida. el cliente original, antes de elegir lee la memoria para ver si hay cambios. una vez q manda ya no la lee mas.
+
+hacer memoria compartida entre cliente y cli async.
+
+poner en environment la 5ta cola y la mem compartida
+
+hacer cierre de cli async desde el cli con una señal

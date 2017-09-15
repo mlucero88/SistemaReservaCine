@@ -27,10 +27,10 @@ for bin in ${BINARIOS[@]}; do
 			g++ -std=c++11 -I${SRC_DIR} ${COMMON_DIR}/ipc/msg_queue.cpp ${COMMON_DIR}/canal.cpp ${SRC_DIR}/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}
 			;;
 		cine)
-			g++ -std=c++11 -I${SRC_DIR} ${SRC_DIR}/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}
+			g++ -std=c++11 -I${SRC_DIR} ${COMMON_DIR}/ipc/msg_queue.cpp ${COMMON_DIR}/canal.cpp ${SRC_DIR}/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}
 			;;
 		admin)
-			g++ -std=c++11 -I${SRC_DIR} ${SRC_DIR}/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}
+			g++ -std=c++11 -I${SRC_DIR} ${COMMON_DIR}/ipc/msg_queue.cpp ${COMMON_DIR}/canal.cpp ${SRC_DIR}/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}
 			;;
 	esac
 	
