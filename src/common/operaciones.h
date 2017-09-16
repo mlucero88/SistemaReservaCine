@@ -11,8 +11,8 @@ typedef union {
 
 	struct {
         int asientos_por_sala[MAX_SALAS];
-        int cantidad_salas;
-	} informar_salas;
+        int cant_salas;
+    } info_salas;
 
 	struct {
         int nro_sala;
@@ -20,20 +20,20 @@ typedef union {
 
 	struct {
         int asiento_habilitado[MAX_ASIENTOS];
-        int cantidad_asientos;
+        int cant_asientos;
         int nro_sala;
     } info_asientos;
 
 	struct {
         int asientos_elegidos[MAX_ASIENTOS_RESERVADOS];
-        int cantidad_elegidos;
+        int cant_elegidos;
         int nro_sala;  // Por ahora, mando el numero de sala otra vez.
 	} elegir_asientos;
 
 	struct {
         int asientos_reservados[MAX_ASIENTOS_RESERVADOS];
-        int cantidad_reservados;
-	} informar_reserva; /* Puede no ser la misma cantidad que los elegidos */
+        int cant_reservados;
+    } info_reserva; /* Puede no ser la misma cantidad que los elegidos */
 
 	struct {
 		bool reserva_confirmada;
@@ -41,15 +41,19 @@ typedef union {
 
 	struct {
 		unsigned short precio;
-	} informar_pago;
+    } info_pago;
 
 	struct {
-		unsigned short pago;
+        unsigned short pago;
 	} pagar;
 
     struct {
         unsigned short pago_ok;
     } pago_ok;
+    struct {
+        int cli_id;
+        int n_sala;
+    } timeout;
 
 } operacion_t;
 

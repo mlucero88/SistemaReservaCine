@@ -17,18 +17,18 @@
 #define INFORMAR_PAGO 8
 #define PAGAR 9
 #define PAGO_OK 10
+#define MSG_TIMEOUT 11
 
 #define NO_DISPONIBLE (-1) // El asiento no existe en la sala
 #define DISPONIBLE 0 // El asiento se puede reservar
 #define RESERVADO 1 // El asiento ya está reservado
 
+#define TIMEOUT 60 // Timeout de la sesión de un cliente
 
-
-namespace {
-const unsigned short MAX_SALAS = 64;
-const unsigned short MAX_ASIENTOS = 128;
-const unsigned short MAX_ASIENTOS_RESERVADOS = 8;
-};
+#define MAX_SALAS 64
+#define MAX_ASIENTOS 128
+#define MAX_ASIENTOS_RESERVADOS 8
+#define MAX_CLIENTES 128 // Máxima cantidad de clientes que pueden estar en una sala al mismo tiempo
 
 
 

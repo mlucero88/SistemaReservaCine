@@ -41,7 +41,7 @@ int main() {
                 int cli_id = msg.op.login.cli_id;
                 char cli_id_str[12];
                 sprintf(cli_id_str, "%d", cli_id);
-                execl("./cine", cli_id_str, NULL);
+                execl("./cine", "cine", cli_id_str, NULL);
                 perror("Error al crear al proceso hijo cine");
                 exit(1);
             }

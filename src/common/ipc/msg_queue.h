@@ -5,7 +5,7 @@
 #include "../operaciones.h"
 
 typedef enum {
-	Q_CINE_CLI = 1, Q_CLI_CINE = 2, Q_ADMIN_CINE = 3, Q_CINE_ADMIN = 4
+	Q_CINE_CLI = 1, Q_CLI_CINE = 2, Q_ADMIN_CINE = 3, Q_CINE_ADMIN = 4, Q_ADMIN_CLI = 5
 } msg_queue_direction;
 
 /* Estructura de mensaje unico, usado por el sistema */

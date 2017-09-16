@@ -12,9 +12,6 @@ struct canal {
 	int id_queue_recepcion;
 };
 
-/* Otra opcion es hacer una funcion para crear un canal especifico
- * Ej: canal_comunicacion_crear_cine_cliente()
- * Pero como está ahora es mas versatil, aunque sean feos los ifs */
 canal *canal_crear(entidad_t local, entidad_t remoto) {
 	int id_q_envio = -1, id_q_recep = -1;
 
@@ -52,15 +49,13 @@ canal *canal_crear(entidad_t local, entidad_t remoto) {
 	return c;
 }
 
-/* TENGO Q RESOLVER EL TEMA DE CÓMO SETEAR EL MSGID DESDE ACA (SIN QUE ME LO SETEEN LOS CALLER)
- * A PARTIR DE LA INFO Q DISPONGO (ENTIDADES ORIGEN Y DESTINO Y SUS PIDS) */
 int canal_enviar(const canal *canal, mensaje_t msg) {
-    printf("[%i] Enviado mensaje en cola %i con mtype %i\n", getpid(), canal->id_queue_envio, msg.mtype);
+	//printf("[%i] Enviado mensaje en cola %i con mtype %i\n", getpid(), canal->id_queue_envio, msg.mtype);
     return msg_queue_send(canal->id_queue_envio, &msg);
 }
 
 int canal_recibir(const canal *canal, mensaje_t &msg, long mtype) {
-    printf("[%i] Esperando mensaje en cola %i\n", getpid(), canal->id_queue_recepcion);
+	// printf("[%i] Esperando mensaje en cola %i\n", getpid(), canal->id_queue_recepcion);
     if (msg_queue_receive(canal->id_queue_recepcion, mtype, &msg)) {
         return msg.mtype;
     }
