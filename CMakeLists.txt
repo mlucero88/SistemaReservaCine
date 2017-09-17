@@ -11,7 +11,7 @@ set(CLIENT_FILES src/cliente/main.cpp)
 set(CINE_FILES src/cine/main.cpp)
 set(CINE_LOGIN_FILES src/cine_login/main.cpp)
 set(ENVIRONMENT_FILES src/environment/main.cpp)
-set(COMMON_FILES src/common/canal.cpp src/common/ipc/msg_queue.cpp)
+set(COMMON_FILES src/common/canal.cpp src/common/ipc/msg_queue.cpp src/common/ipc/sh_mem.cpp)
 
 
 add_executable(admin ${ADMIN_FILES} ${COMMON_FILES})

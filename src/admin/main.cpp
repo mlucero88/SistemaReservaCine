@@ -9,7 +9,13 @@ void informar_asientos(mensaje_t *m, canal *canal_cine_admin, int cine_id, int a
                        int n_asientos_salas[MAX_SALAS], int salas_clientes[MAX_SALAS][MAX_CLIENTES],
                        int n_salas_clientes[MAX_SALAS]) {
     int nro_sala = m->op.elegir_sala.nro_sala;
-    salas_clientes[nro_sala][n_salas_clientes[nro_sala]] = m->mtype;
+    for (int i = 0; i < MAX_CLIENTES; ++i) {
+        // PONGO EL NRO DE CLIENTE EN LA PRIMERA POSICIÓN LIBRE
+        if (salas_clientes[nro_sala][n_salas_clientes[nro_sala]] == 0) {
+            salas_clientes[nro_sala][n_salas_clientes[nro_sala]] = m->mtype;
+            break;
+        }
+    }
     printf("%sCLIENTE %i en la sala %i\n", KBLU, m->mtype, nro_sala);
     n_salas_clientes[nro_sala]++; // entra un nuevo cliente a la sala;
     memcpy(m->op.info_asientos.asiento_habilitado, asientos_salas[nro_sala], MAX_ASIENTOS * sizeof(int));
@@ -27,7 +33,7 @@ void informar_salas(mensaje_t *m, canal *canal_cine_admin, int cine_id, int n_sa
     canal_enviar(canal_cine_admin, *m);
 }
 
-void notificar_clientes(int q_admin_cliente, int nro_sala, int asientos_salas[MAX_SALAS][MAX_CLIENTES],
+void notificar_clientes(int q_admin_cliente, int nro_sala, int asientos_salas[MAX_SALAS][MAX_ASIENTOS],
                         int n_asientos_salas[MAX_SALAS],
                         int salas_clientes[MAX_SALAS][MAX_CLIENTES]) {
     // Si se pudo reservar alguno de los asientos, les aviso a los clientes que estaban mirando esa sala
@@ -157,15 +163,15 @@ int main(int argc, char *argv[]) {
 
     canal *canal_cine_admin = canal_crear(admin, cine);
     if (canal_cine_admin == NULL) {
-        std::cerr << "Error al crear canal de comunicacion entre admin y cine" << std::endl;
+        std::cerr << "[ADMIN]Error al crear canal de comunicacion entre admin y cine " << std::endl;
         exit(1);
     }
 
 
     // Entre admin y clientes es solo en una dirección por eso uso sólo una cola y no "canal"
-    int q_admin_cliente = msg_queue_create(Q_ADMIN_CLI);
+    int q_admin_cliente = msg_queue_get(Q_ADMIN_CLI);
     if (q_admin_cliente == -1) {
-        std::cerr << "Error al crear canal de comunicacion entre admin y cliente" << std::endl;
+        std::cerr << "[ADMIN]Error al crear canal de comunicacion entre admin y cliente" << std::endl;
         exit(1);
     }
 
@@ -207,10 +213,25 @@ int main(int argc, char *argv[]) {
         }
 
         if (msg.tipo == PAGAR) {
+            int cli_id = msg.mtype;
             pago_ok(&msg, canal_cine_admin, cine_id);
+            // SE PUEDE REEMPLAZAR POR UN MAP, PERO YA QUE ESTAMOS HACIENDO CASI TODO EN C, LO DEJO ASÍ
+            // UN MAP DE SALAS -> CLIENTES
+            // Y OTRO DE CLIENTES -> SALAS
+            for (int i = 0; i < MAX_SALAS; ++i) {
+                for (int j = 0; j < MAX_CLIENTES; ++j) {
+                    // SACO AL CLIENTE DEL LISTADO DE CLIENTES DE LA SALA
+                    if (salas_clientes[i][j] == cli_id) {
+                        printf("%sEL CLIENTE %i YA PAGÓ, LOGOUT%s\n", KRED, cli_id, KNRM);
+                        salas_clientes[i][j] = 0;
+                        break;
+                    }
+                }
+            }
+
         }
 
-        if (msg.tipo == MSG_TIMEOUT) {
+        if (msg.tipo == TIMEOUT) {
             // Cancelo la reserva que había hecho el cliente, si es que había alguna y le aviso a los demás clientes
 
             int cli_id = msg.op.timeout.cli_id;
