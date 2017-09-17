@@ -30,6 +30,10 @@ int main(int argc, char* argv[]) {
 			std::cerr << "Error al crear msg_q CLI_CINE: " << strerror(errno) << std::endl;
 			success = false;
 		}
+		if (msg_queue_create(Q_ADMIN_CLI) == -1) {
+			std::cerr << "Error al crear msg_q ADMIN_CLI: " << strerror(errno) << std::endl;
+			success = false;
+		}
 
 		if (!success) {
 			std::cout << "Se encontraron errores al crear algunos IPC (posiblemente ya existian)\n";
@@ -46,6 +50,7 @@ int main(int argc, char* argv[]) {
 		msg_queue_destroy(msg_queue_get(Q_CINE_ADMIN));
 		msg_queue_destroy(msg_queue_get(Q_CINE_CLI));
 		msg_queue_destroy(msg_queue_get(Q_CLI_CINE));
+		msg_queue_destroy(msg_queue_get(Q_ADMIN_CLI));
 
 		std::cout << "Se liberaron todos los IPC" << std::endl;
 		return 0;

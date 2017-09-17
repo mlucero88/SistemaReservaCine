@@ -10,7 +10,7 @@ struct canal;
 
 canal *canal_crear(entidad_t local, entidad_t remoto);
 
-int canal_enviar(const canal *canal, mensaje_t msg);
+int canal_enviar(const canal *canal, const mensaje_t &msg);
 
 int canal_recibir(const canal *canal, mensaje_t &msg, long mtype);
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PROJ_DIR=`dirname $(readlink -f $0)`
-BINARIOS=("environment" "cliente" "cine_login" "cine" "admin")
+BINARIOS=("environment" "cliente" "cliente_asyn" "cine_login" "cine" "admin")
 SRC_DIR=${PROJ_DIR}/src
 COMMON_DIR=${SRC_DIR}/common
 
@@ -21,7 +21,10 @@ for bin in ${BINARIOS[@]}; do
 			g++ -std=c++11 -I${SRC_DIR} ${COMMON_DIR}/ipc/msg_queue.cpp ${SRC_DIR}/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}
 			;;
 		cliente)
-			g++ -std=c++11 -I${SRC_DIR} ${COMMON_DIR}/ipc/msg_queue.cpp ${COMMON_DIR}/canal.cpp ${SRC_DIR}/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}
+			g++ -std=c++11 -I${SRC_DIR} ${COMMON_DIR}/ipc/msg_queue.cpp ${COMMON_DIR}/ipc/sh_mem.cpp ${COMMON_DIR}/canal.cpp ${SRC_DIR}/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}
+			;;
+		cliente_asyn)
+			g++ -std=c++11 -I${SRC_DIR} ${COMMON_DIR}/ipc/msg_queue.cpp ${COMMON_DIR}/ipc/sh_mem.cpp ${COMMON_DIR}/canal.cpp ${SRC_DIR}/cliente/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}
 			;;
 		cine_login)
 			g++ -std=c++11 -I${SRC_DIR} ${COMMON_DIR}/ipc/msg_queue.cpp ${COMMON_DIR}/canal.cpp ${SRC_DIR}/${bin}/main.cpp -o ${PROJ_DIR}/bin/${bin}

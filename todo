@@ -1,12 +1,8 @@
-Poner colores en printf
+Poner colores en printf -> update: para el cli me hice un par de macros para imprimir, aunq termine haciendo q salga por log (excepto interaccion con usuario) q me parece mejor q tener una sola consola impriiendo todos los procesos. No toque los prints de los otros procesos para no pisar los fuentes q estabas usando.
 
-hacer q el cliente avance con enters
 
-hacer directiva __DEBUG para imprimir mensajes de cola (o sea sacar un poco la cantidad de printf para una presentacion)
 
-Poner mas info en los printf de la operacion (q se entiendea bien el flow para la presentacion)
-
-diagrama de secuencia y diagrama de arquitectura (procesos + mecanismos ipc)
+/** Christian: estas cosas creo q las estabas trabajando vos. Por las dudas no toque las clases de cine y admin. Si ya lo terminaste avisame y cuando termino con el cliente lo pruebo todo. Y si te falta algo te ayudo cuando termine con el cliente **/
 
 alarma de tiempo de sesion
 
@@ -18,12 +14,12 @@ hacer nuevo tipo de mensaje del admin a los clientes (pasando por el cine) avisa
 
 |---> para hacer esto, el admin tiene q tener una tabla donde, al haber un mensaje "elegir sala", se agrega una entrada del id del cine q la mando, y cuando le llega la confirmacion del pago o un timeout, borra esa entrada (posiblemente un multimap)
 
-hacer 5ta cola entre admin y cliente_async para enviar la info de asientos reservados.
+/**************/
 
-hacer cliente asincronico. el chabon se pone en recepcion de la 5ta cola y cuando le llega notificacion, lo escribe en la mem compartida. el cliente original, antes de elegir lee la memoria para ver si hay cambios. una vez q manda ya no la lee mas.
 
-hacer memoria compartida entre cliente y cli async.
 
-poner en environment la 5ta cola y la mem compartida
+diagrama de secuencia y diagrama de arquitectura (procesos + mecanismos ipc)
 
-hacer cierre de cli async desde el cli con una señal
+
+
+*** CUANDO ESTE LO IMPORTANTE HECHO, REVISAR PRINTF Y COSAS PARA QUE SEA "AMIGABLE" LA PRESENTACION ***

@@ -1,6 +1,5 @@
-#include <cerrno>
 #include <cstring>
-#include <iostream>
+#include <cstdlib>
 
 #include "ipc/msg_queue.h"
 #include "canal.h"
@@ -35,7 +34,6 @@ canal *canal_crear(entidad_t local, entidad_t remoto) {
 	}
 
 	if (id_q_envio == -1 || id_q_recep == -1) {
-		std::cerr << "Error al crear canal de comunicacion: " << strerror(errno) << std::endl;
 		return NULL;
 	}
 
@@ -49,7 +47,7 @@ canal *canal_crear(entidad_t local, entidad_t remoto) {
 	return c;
 }
 
-int canal_enviar(const canal *canal, mensaje_t msg) {
+int canal_enviar(const canal *canal, const mensaje_t &msg) {
 	//printf("[%i] Enviado mensaje en cola %i con mtype %i\n", getpid(), canal->id_queue_envio, msg.mtype);
     return msg_queue_send(canal->id_queue_envio, &msg);
 }
@@ -59,7 +57,6 @@ int canal_recibir(const canal *canal, mensaje_t &msg, long mtype) {
     if (msg_queue_receive(canal->id_queue_recepcion, mtype, &msg)) {
         return msg.mtype;
     }
-    perror("Error al recibir: ");
     return -1;
 }
 
