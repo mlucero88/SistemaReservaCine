@@ -2,7 +2,6 @@
 #include <sys/ipc.h>
 #include <cstring>
 #include "../../common/ipc/msg_queue.h"
-#include "../../common/operaciones.h"
 #include "../../common/colors.h"
 #include <sys/shm.h>
 
