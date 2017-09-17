@@ -130,6 +130,7 @@ mensaje_t recibir_info_reserva() {
 	if (msg.tipo != INFORMAR_RESERVA) {
 		if (msg.tipo == TIMEOUT) {
 			CLI_PRINTF("TIMEOUT recibido");
+            printf("Tardaste mucho :(\n");
 		}
 		else {
 			CLI_PRINTF("Error: se esperaba INFORMAR_RESERVA y se recibio %s", strOpType(msg.tipo));

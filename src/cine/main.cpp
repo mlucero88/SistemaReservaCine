@@ -4,19 +4,21 @@
 #include "../common/canal.h"
 #include "../common/colors.h"
 #include "../common/color_print.h"
+#include "../common/ipc/msg_queue.h"
+#include "../common/operaciones.h"
 
 void info_salas(long cine_id, canal *canal_cine_admin, long cli_id, canal *canal_cine_cli);
 
 pid_t ini_timer();
 
-void check_timeout(int cli_id, int n_sala, canal *canal_cine_cli, canal *canal_cine_admin) {
-    // Con WNOHANG, waitpid devuelve 0 si el hijo no cambió de estado,
-    bool timeout = waitpid(-1, NULL, WNOHANG) > 0;
+// *** ES FEO ESTO PERO NO VEO OTRA FORMA:
 
-    if (!timeout) {
-        return;
-    }
+canal *canal_cine_admin;
+canal *canal_cine_cli;
+int cli_id;
+int n_sala;
 
+void alarm_handler(int signal) {
     printf("%sTIMEOUT\n", KBLU);
     mensaje_t msg;
     msg.tipo = TIMEOUT;
@@ -24,7 +26,12 @@ void check_timeout(int cli_id, int n_sala, canal *canal_cine_cli, canal *canal_c
     msg.op.timeout.cli_id = cli_id;
     msg.op.timeout.n_sala = n_sala;
     // Le aviso al cliente
+
     canal_enviar(canal_cine_cli, msg);
+
+    // Acá se podría poner un msgrcv que NO BLOQUEE, para que saque algun mensaje que el cliente pueda haber mandado
+    // Y si no hay nada, no se bloquea
+
     // Le aviso al admin
     canal_enviar(canal_cine_admin, msg);
     exit(0);
@@ -33,6 +40,10 @@ void check_timeout(int cli_id, int n_sala, canal *canal_cine_cli, canal *canal_c
 void forward_msg(canal *canal_cine_cli, long cli_id, canal *canal_cine_admin, long cine_id, int tipo) {
     mensaje_t msg;
     canal_recibir(canal_cine_cli, msg, cli_id);
+    if (msg.tipo == ELEGIR_SALA) {
+        // **** HORRIBLE ESTO ****
+        n_sala = msg.op.elegir_sala.nro_sala;
+    }
     canal_enviar(canal_cine_admin, msg);
     printf("%s[%i] Esperando respuesta del admin para %s\n", KMAG, getpid(), strOpType(tipo));
     canal_recibir(canal_cine_admin, msg, cine_id);
@@ -41,18 +52,28 @@ void forward_msg(canal *canal_cine_cli, long cli_id, canal *canal_cine_admin, lo
 }
 
 int main(int argc, char *argv[]) {
+
+    struct sigaction sigalarm;
+    sigalarm.sa_handler = alarm_handler;
+    sigemptyset(&sigalarm.sa_mask);
+    sigaction(SIGALRM, &sigalarm, NULL);
+
+
     entidad_t cine = {.proceso = entidad_t::CINE, .pid = getpid()};
     entidad_t admin = {.proceso = entidad_t::ADMIN, .pid = -1};
-    int cli_id = atoi(argv[1]); // id del cliente
+
+    cli_id = atoi(argv[1]); // id del cliente
     entidad_t cliente = {.proceso = entidad_t::CLIENTE, .pid = cli_id};
 
-    canal *canal_cine_cli = canal_crear(cine, cliente);
+
+    canal_cine_cli = canal_crear(cine, cliente);
     if (canal_cine_cli == NULL) {
         std::cerr << "Error al crear canal de comunicacion entre cine y cliente" << std::endl;
         exit(1);
     }
 
-    canal *canal_cine_admin = canal_crear(cine, admin);
+
+    canal_cine_admin = canal_crear(cine, admin);
     if (canal_cine_admin == NULL) {
         std::cerr << "Error al crear canal de comunicacion entre cine y cliente" << std::endl;
         exit(1);
@@ -64,7 +85,7 @@ int main(int argc, char *argv[]) {
 
     info_salas(cine_id, canal_cine_admin, cli_id, canal_cine_cli);
 
-    pid_t pid_timer = ini_timer();
+    alarm(TIMEOUT_VAL);
 
     forward_msg(canal_cine_cli, cli_id, canal_cine_admin, cine_id, ELEGIR_SALA);
     forward_msg(canal_cine_cli, cli_id, canal_cine_admin, cine_id, ELEGIR_ASIENTOS);
@@ -72,20 +93,6 @@ int main(int argc, char *argv[]) {
     forward_msg(canal_cine_cli, cli_id, canal_cine_admin, cine_id, PAGAR);
 
     printf("%s[%i] Terminado%s\n", KMAG, getpid(), KNRM);
-
-    // Mato al timer para que no siga, ya que no hace falta
-    kill(pid_timer, SIGKILL);
-}
-
-pid_t ini_timer() {
-// Empieza el timer
-    pid_t pid_timer;
-    if ((pid_timer = fork()) == 0) {
-        execl("./cine_timeout", "cine_timeout", NULL);
-        exit(1);
-    }
-    printf("%sPID_TIMER = %i%s\n", KBLU, pid_timer, KNRM);
-    return pid_timer;
 }
 
 void info_salas(long cine_id, canal *canal_cine_admin, long cli_id, canal *canal_cine_cli) {

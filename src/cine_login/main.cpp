@@ -13,6 +13,12 @@
 
 int main() {
 
+    struct sigaction sigchld;
+    sigchld.sa_handler = SIG_DFL;
+    sigchld.sa_flags = SA_NOCLDWAIT;
+    sigemptyset(&sigchld.sa_mask);
+    sigaction(SIGCHLD, &sigchld, NULL);
+
 	entidad_t cine = { .proceso = entidad_t::CINE, .pid = getpid() };
 	entidad_t cliente = { .proceso = entidad_t::CLIENTE, .pid = -1 };
 
