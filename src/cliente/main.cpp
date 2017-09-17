@@ -256,7 +256,7 @@ int main() {
 	do {
 		printf("\nElija sala: ");
 		scanf("%d", &sala);
-		if (sala < 0 || sala >= msg.op.info_salas.cant_salas) {
+        if (sala < 1 || sala >= msg.op.info_salas.cant_salas + 1) {
 			printf("Nro de sala invalida!\n");
 		}
 		else if (msg.op.info_salas.asientos_por_sala[sala] <= 0) {
@@ -264,6 +264,7 @@ int main() {
 		}
 		else {
 			salaElegida = true;
+            sala = sala - 1; // La sala 1 en realidad es la 0 ...
 		}
 	} while (!salaElegida);
 
