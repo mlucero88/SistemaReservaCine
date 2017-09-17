@@ -279,7 +279,7 @@ int main() {
     int asientos[MAX_ASIENTOS_RESERVADOS], asiento, cantAsientos = 0;
     bool finEleccionAsientos = false;
     do {
-        printf("\nElija un asiento (-1 para finalizar eleccion): ");
+        printf("\nElija un asiento (-1 para finalizar eleccion)(el primer asiento es 0): ");
         scanf("%d", &asiento);
         if (asiento == -1) {
             if (cantAsientos > 0) {
