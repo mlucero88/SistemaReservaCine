@@ -42,6 +42,7 @@ void forward_msg(canal *canal_cine_cli, long cli_id, canal *canal_cine_admin, lo
     canal_recibir(canal_cine_cli, msg, cli_id);
     if (msg.tipo == ELEGIR_SALA) {
         // **** HORRIBLE ESTO ****
+        printf("NRO DE SALA RECIBIDO: %i\n", msg.op.elegir_sala.nro_sala);
         n_sala = msg.op.elegir_sala.nro_sala;
     }
     canal_enviar(canal_cine_admin, msg);
