@@ -1,15 +1,10 @@
 #include <iostream>
 #include <signal.h>
-#include <sys/wait.h>
 #include "../common/canal.h"
 #include "../common/colors.h"
 #include "../common/color_print.h"
-#include "../common/ipc/msg_queue.h"
-#include "../common/operaciones.h"
 
 void info_salas(long cine_id, canal *canal_cine_admin, long cli_id, canal *canal_cine_cli);
-
-pid_t ini_timer();
 
 // *** ES FEO ESTO PERO NO VEO OTRA FORMA:
 

@@ -7,10 +7,8 @@
 #include "../common/canal.h"
 #include "../common/ipc/sh_mem.h"
 #include "../common/color_print.h"
-#include "../common/ipc/msg_queue.h"
-#include "../common/operaciones.h"
 
-#define CLI_LOG cli_log
+#define CLI_LOG stdout
 #define CLI_PRINTF(fmt, ...) FPRINTF(CLI_LOG, BLUE, fmt, ##__VA_ARGS__)
 
 int shmemId;
@@ -237,6 +235,7 @@ int main() {
 	}
 	CLI_PRINTF("Cliente asincronico iniciado (pid=%d)", pid_asyn);
 
+
     /******** LOGIN ********/
 
     login();
@@ -255,7 +254,10 @@ int main() {
     bool salaElegida = false;
     do {
         printf("\nElija sala: ");
-        scanf("%d", &sala);
+        char sala_str[12];
+        fgets(sala_str, 12, stdin);
+        sala = atoi(sala_str);
+        //scanf("%d", &sala);
         if (sala < 1 || sala >= msg.op.info_salas.cant_salas + 1) {
             printf("Nro de sala invalida!\n");
         } else if (msg.op.info_salas.asientos_por_sala[sala - 1] <= 0) {
@@ -280,18 +282,45 @@ int main() {
     /******* ELEGIR ASIENTOS *********/
 
     // TODO LEER DE LA MEMORIA COMPARTIDA LOS ASIENTOS QUE HAY
+
+    int asiento_habilitado[MAX_ASIENTOS];
+
+    memcpy(asiento_habilitado, msg.op.info_asientos.asiento_habilitado, MAX_ASIENTOS * sizeof(int));
+
+    //kill(pid_asyn,SIGINT); // Le aviso al cliente_asyn que ya no lo necesito ???
+
+    printf("ENTER para elegir asientos (a partir de ahora no se actualizan los asientos de la sala): \n");
+
+    getchar();
+
+
+    // *** TOMAR LOCK
+    if (sharedData->dirty) {
+        memcpy(asiento_habilitado, sharedData->asientos, MAX_ASIENTOS * sizeof(int));
+        printf("\nAhora hay %i asientos en total en la sala\n", sharedData->cantidad);
+        for (int j = 0; j < MAX_ASIENTOS; j++) {
+            printf("%c", msg.op.info_asientos.asiento_habilitado[j] == DISPONIBLE ? 'O' : 'X');
+        }
+        printf("\n");
+    }
+    // *** LIBERAR LOCK y matar cliente asyn
+
     int asientos[MAX_ASIENTOS_RESERVADOS], asiento, cantAsientos = 0;
+    memset(asientos, 0, MAX_ASIENTOS_RESERVADOS * sizeof(int));
+
     bool finEleccionAsientos = false;
     do {
         printf("\nElija un asiento (-1 para finalizar eleccion)(el primer asiento es 0): ");
-        scanf("%d", &asiento);
+        char asiento_str[12];
+        fgets(asiento_str, 12, stdin);
+        asiento = atoi(asiento_str);
         if (asiento == -1) {
             if (cantAsientos > 0) {
                 finEleccionAsientos = true;
             } else {
                 printf("Debe elegir al menos un asiento!\n");
             }
-        } else if (asientos >= 0 && msg.op.info_asientos.asiento_habilitado[asiento] == DISPONIBLE) {
+        } else if (asientos >= 0 && asiento_habilitado[asiento] == DISPONIBLE) {
             asientos[cantAsientos++] = asiento;
             printf("Asiento %i agregado\n", asiento);
             if (cantAsientos == MAX_ASIENTOS_RESERVADOS) {
@@ -307,11 +336,17 @@ int main() {
     /******* RECIBIR INFO RESERVA *********/
 
     msg = recibir_info_reserva();
-    printf("\nSe reservaron los siguientes asientos:");
-    for (int i = 0; i < msg.op.info_reserva.cant_reservados; i++) {
-        printf(" %i", msg.op.info_reserva.asientos_reservados[i]);
+    printf("\nSe reservaron %i/%i asientos:\n", msg.op.info_reserva.cant_reservados, cantAsientos);
+//    for (int i = 0; i < msg.op.info_reserva.cant_reservados; i++) {
+//        printf(" %i", msg.op.info_reserva.asientos_reservados[i]);
+//    }
+//    printf("\n");
+
+    for (int i = 0; i < MAX_ASIENTOS_RESERVADOS; i++) {
+        if (msg.op.info_reserva.asientos_reservados[i]) {
+            printf(" %i\n", asientos[i]);
+        }
     }
-    printf("\n");
 
     /******* CONFIRMAR RESERVA *********/
 
@@ -329,7 +364,7 @@ int main() {
     pagar(msg.op.info_pago.precio);
 
     /******* RECIBIR PAGO ACEPTADO *********/
-
+    printf("Esperando respuesta de pago...\n");
     recibir_pago_ok();
     printf("\nPago aceptado. Gracias por operar con red SARASA\n");
 
