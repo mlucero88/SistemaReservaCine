@@ -1,7 +1,8 @@
 #include <cerrno>
 #include <cstring>
 #include <cstdlib>
-#include <signal.h>
+#include <csignal>
+#include <sys/wait.h>
 
 #include "../common/canal.h"
 #include "../common/ipc/sh_mem.h"
@@ -12,35 +13,33 @@
 #define CLI_LOG cli_log
 #define CLI_PRINTF(fmt, ...) FPRINTF(CLI_LOG, BLUE, fmt, ##__VA_ARGS__)
 
-#ifdef _DEBUG
-#define CLI_DEBUG_PRINT(fmt, ...) FPRINTF(BLUE, fmt, ##__VA_ARGS__)
-#else
-#define CLI_DEBUG_PRINT(fmt, ...)
-#endif
-
-struct shmem_data {
-    int asientos[MAX_ASIENTOS];
-    int cantidad;
-};
-
 int shmemId;
 pid_t pid_asyn = 0;
 canal *canal_cli_cine = nullptr;
 shmem_data *sharedData = nullptr;
-FILE *cli_log;
+FILE *cli_log = nullptr;
 
 void liberarYSalir() {
+	CLI_PRINTF("Preparando para salir...");
+    if (pid_asyn > 0) {
+    	int status;
+        kill(pid_asyn, SIGINT);
+        wait(&status);
+        CLI_PRINTF("Cliente asincronico cerrado");
+    }
+
     if (sharedData != nullptr) {
-        sh_mem_release(static_cast<void *>(sharedData));
+        sh_mem_release(sharedData);
         sh_mem_destroy(shmemId);
+        CLI_PRINTF("Memoria compartida liberada");
     }
     if (canal_cli_cine != nullptr) {
         canal_destruir(canal_cli_cine);
+        CLI_PRINTF("Canal destruido");
     }
 
-    if (pid_asyn > 0) {
-        kill(pid_asyn, SIGKILL); // TODO hacer cierre de cli async (martin)
-    }
+    CLI_PRINTF("*** Aplicacion cerrada ***");
+   	fclose(cli_log);
     exit(1);
 }
 
@@ -203,6 +202,14 @@ int main() {
     cli_log = fopen(logName, "w");
     signal(SIGINT, sighandler);
 
+    struct sigaction sigchld;
+    sigchld.sa_handler = SIG_DFL;
+    sigchld.sa_flags = SA_NOCLDWAIT;
+    sigemptyset(&sigchld.sa_mask);
+    sigaction(SIGCHLD, &sigchld, NULL);
+
+    CLI_PRINTF("*** Aplicacion iniciada ***");
+
     entidad_t cliente = {.proceso = entidad_t::CLIENTE, .pid = cli_id};
     entidad_t cine = {.proceso = entidad_t::CINE, .pid = -1};
     mensaje_t msg;
@@ -210,28 +217,25 @@ int main() {
     canal_cli_cine = canal_crear(cliente, cine);
     if (canal_cli_cine == NULL) {
         CLI_PRINTF("Error al crear canal de comunicacion entre cliente y cine: %s", strerror(errno));
-        return 1;
+        liberarYSalir();
     }
     CLI_PRINTF("Canal de comunicacion entre cliente y cine creado");
 
-    shmemId = sh_mem_create(cli_id, sizeof(shmem_data), reinterpret_cast<void **>(&sharedData));
+    shmemId = sh_mem_create(cli_id, sharedData);
     if (shmemId == -1) {
         CLI_PRINTF("Error al crear memoria compartida entre cliente y cliente_asyn: %s", strerror(errno));
-        canal_destruir(canal_cli_cine);
-        return 1;
+        liberarYSalir();
     }
     CLI_PRINTF("Memoria compartida entre cliente y cliente_asyn creada");
 
-    // TODO hacer fork (martin)
-//	if ((pid_asyn = fork()) == 0) {
-//		// Lanzo cliente asyn
-//		char cli_id_str[12];
-//		sprintf(cli_id_str, "%d", cli_id);
-//		execl("./client_asyn", "client_asyn", cli_id_str, NULL);
-//		exit(1);
-//	}
-//	CLI_PRINTF("Error al crear memoria compartida entre cliente y cliente_asyn: %s", strerror(errno));
-//	printf("%sCLIENTE ASYN PARA CLIENTE %i = %i%s\n", KRED, getpid(), pid_asyn, KNRM);
+	if ((pid_asyn = fork()) == 0) {
+		char cli_id_str[16];
+		sprintf(cli_id_str, "%d", cli_id);
+		execl("./cliente_asyn", "cliente_asyn", cli_id_str, NULL);
+		CLI_PRINTF("Error en el execl del cliente asincronico");
+		exit(1);
+	}
+	CLI_PRINTF("Cliente asincronico iniciado (pid=%d)", pid_asyn);
 
     /******** LOGIN ********/
 

@@ -17,6 +17,13 @@ hacer nuevo tipo de mensaje del admin a los clientes (pasando por el cine) avisa
 /**************/
 
 
+/*** martin  ***/ 
+hacer lectura de cambios de asientos
+poner locks en clientes
+testear clientes
+sacar harcodeo de aceptacion de reserva
+/**************/
+
 
 diagrama de secuencia y diagrama de arquitectura (procesos + mecanismos ipc)
 
