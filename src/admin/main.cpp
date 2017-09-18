@@ -57,7 +57,7 @@ void notificar_clientes(int q_admin_cliente, int nro_sala, int asientos_salas[MA
     msg.tipo = INFORMAR_ASIENTOS;
     msg.op.info_asientos.nro_sala = nro_sala;
     msg.op.info_asientos.cant_asientos = n_asientos_salas[nro_sala];
-    memcpy(msg.op.info_asientos.asiento_habilitado, asientos_salas[nro_sala], MAX_ASIENTOS);
+    memcpy(msg.op.info_asientos.asiento_habilitado, asientos_salas[nro_sala], MAX_ASIENTOS * sizeof(int));
     printf("%sNOTIFICANDO CLIENTES\n", KMAG);
     for (int i = 0; i < MAX_CLIENTES; i++) {
         if (salas_clientes[nro_sala][i] != 0) {

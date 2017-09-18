@@ -229,7 +229,7 @@ int main() {
 	if ((pid_asyn = fork()) == 0) {
 		char cli_id_str[16];
 		sprintf(cli_id_str, "%d", cli_id);
-		execl("./cliente_asyn", "cliente_asyn", cli_id_str, NULL);
+        execl("./client_asyn", "client_asyn", cli_id_str, NULL);
 		CLI_PRINTF("Error en el execl del cliente asincronico");
 		exit(1);
 	}
@@ -299,11 +299,17 @@ int main() {
         memcpy(asiento_habilitado, sharedData->asientos, MAX_ASIENTOS * sizeof(int));
         printf("\nAhora hay %i asientos en total en la sala\n", sharedData->cantidad);
         for (int j = 0; j < MAX_ASIENTOS; j++) {
-            printf("%c", msg.op.info_asientos.asiento_habilitado[j] == DISPONIBLE ? 'O' : 'X');
+            printf("%c", asiento_habilitado[j] == DISPONIBLE ? 'O' : 'X');
         }
         printf("\n");
     }
     // *** LIBERAR LOCK y matar cliente asyn
+
+    printf("\nAhora hay en la sala :\n");
+    for (int j = 0; j < MAX_ASIENTOS; j++) {
+        printf("%c", asiento_habilitado[j] == DISPONIBLE ? 'O' : 'X');
+    }
+    printf("\n");
 
     int asientos[MAX_ASIENTOS_RESERVADOS], asiento, cantAsientos = 0;
     memset(asientos, 0, MAX_ASIENTOS_RESERVADOS * sizeof(int));
