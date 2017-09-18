@@ -15,8 +15,8 @@ set(COMMON_FILES src/common/canal.cpp src/common/ipc/msg_queue.cpp src/common/ip
 
 
 add_executable(admin ${ADMIN_FILES} ${COMMON_FILES})
-add_executable(client_asyn src/cliente/cliente_asyn.cpp ${COMMON_FILES})
-add_executable(client ${CLIENT_FILES} ${COMMON_FILES})
+add_executable(cliente_asyn src/cliente/cliente_asyn.cpp ${COMMON_FILES})
+add_executable(cliente ${CLIENT_FILES} ${COMMON_FILES})
 add_executable(cine ${CINE_FILES} ${COMMON_FILES})
 add_executable(cine_login ${CINE_LOGIN_FILES} ${COMMON_FILES})
 add_executable(environment ${ENVIRONMENT_FILES} ${COMMON_FILES})

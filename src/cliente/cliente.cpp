@@ -229,7 +229,7 @@ int main() {
 	if ((pid_asyn = fork()) == 0) {
 		char cli_id_str[16];
 		sprintf(cli_id_str, "%d", cli_id);
-        execl("./client_asyn", "client_asyn", cli_id_str, NULL);
+        execl("./cliente_asyn", "cliente_asyn", cli_id_str, NULL);
 		CLI_PRINTF("Error en el execl del cliente asincronico");
 		exit(1);
 	}
