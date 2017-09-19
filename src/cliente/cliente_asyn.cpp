@@ -6,7 +6,6 @@
 #include "../common/canal.h"
 #include "../common/ipc/sh_mem.h"
 #include "../common/color_print.h"
-#include "../common/operaciones.h"
 
 #define CLI_LOG asyncli_log
 #define CLI_PRINTF(fmt, ...) FPRINTF(CLI_LOG, RED, fmt, ##__VA_ARGS__)
@@ -74,7 +73,7 @@ int main(int argc, char *argv[]) {
 
         shmem_data data;
 		data.cantidad = msg.op.info_asientos.cant_asientos;
-        memcpy(data.asientos, msg.op.info_asientos.asiento_habilitado, sizeof(int) * data.cantidad);
+        memcpy(data.asientos, msg.op.info_asientos.asiento_habilitado, sizeof(int) * MAX_ASIENTOS);
         data.dirty = true;
 
         sh_mem_write(sharedMem, &data);

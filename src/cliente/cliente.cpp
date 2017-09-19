@@ -194,6 +194,7 @@ void recibir_pago_ok() {
 
 int main() {
     int cli_id = getpid();
+    printf("PID: %i\n", cli_id);
     char logName[64];
     sprintf(logName, "../logs/cli_%i" ".log", cli_id);
     cli_log = fopen(logName, "w");
@@ -295,7 +296,7 @@ int main() {
         memcpy(asiento_habilitado, sharedData.asientos, MAX_ASIENTOS * sizeof(int));
         asientosEnSala = sharedData.cantidad;
         printf("\nATENCION! Ahora hay %i asientos en total en la sala\n", asientosEnSala);
-        for (int j = 0; j < asientosEnSala; j++) {
+        for (int j = 0; j < MAX_ASIENTOS; j++) {
             printf("%c", asiento_habilitado[j] == DISPONIBLE ? 'O' : 'X');
         }
         printf("\n");
