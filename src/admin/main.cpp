@@ -1,8 +1,6 @@
 #include <iostream>
 #include <cstring>
 #include "../common/canal.h"
-#include "../common/operaciones.h"
-#include "../common/ipc/msg_queue.h"
 #include "../common/colors.h"
 
 void mostrar_asientos(int n_sala, int asientos_salas[MAX_SALAS][MAX_ASIENTOS]) {
@@ -219,13 +217,7 @@ int main(int argc, char *argv[]) {
             printf("%s[ADMIN] INFORMAR_RESERVA para %i\n", KGRN, cine_id);
             int n_sala;
             int n_reservados;
-            printf("Asientos antes de la reserva en la sala 2\n");
-            mostrar_asientos(1, asientos_salas);
-
             informar_reserva(&msg, canal_cine_admin, cine_id, asientos_salas, n_asientos_salas, &n_sala, &n_reservados);
-
-            printf("Asientos después de la reserva en la sala 2\n");
-            mostrar_asientos(1, asientos_salas);
 
             if (n_reservados > 0) {
                 notificar_clientes(q_admin_cliente, n_sala, asientos_salas, n_asientos_salas, salas_clientes);
