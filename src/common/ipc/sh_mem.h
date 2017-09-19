@@ -9,14 +9,21 @@ struct shmem_data {
     bool dirty;
 };
 
-int sh_mem_create(int n, shmem_data* &mem_ptr);
+struct shmem;
 
-int sh_mem_destroy(int shmem_id);
+/* Utilizadas por proceso maestro (q crea y destruye la memoria) */
+shmem* sh_mem_create(int n);
+void sh_mem_destroy(shmem* mem);
+/**************/
 
-/* Obtiene un puntero a la memoria compartida (debe estar creada). Si retorna NULL, la operacion fallo (consultar errno) */
-shmem_data* sh_mem_get(int n);
+/* Utilizadas por procesos esclavos (q no crean ni destruyen la memoria) */
+shmem* sh_mem_get(int n);
+void sh_mem_release(shmem* mem);
+/**************/
 
-/* Libera el puntero a la memoria compartida obtenida en sh_mem_get */
-void sh_mem_release(shmem_data* mem_ptr);
+/* Locked read/write */
+void sh_mem_write(shmem* mem, const shmem_data *data);
+void sh_mem_read(shmem* mem, shmem_data *data);
+
 
 #endif /* COMMON_IPC_SH_MEM_H_ */

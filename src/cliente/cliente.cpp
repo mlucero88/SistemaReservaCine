@@ -14,7 +14,7 @@
 int shmemId;
 pid_t pid_asyn = 0;
 canal *canal_cli_cine = nullptr;
-shmem_data *sharedData = nullptr;
+shmem *sharedMem = nullptr;
 FILE *cli_log = nullptr;
 
 void liberarYSalir() {
@@ -26,9 +26,8 @@ void liberarYSalir() {
         CLI_PRINTF("Cliente asincronico cerrado");
     }
 
-    if (sharedData != nullptr) {
-        sh_mem_release(sharedData);
-        sh_mem_destroy(shmemId);
+    if (sharedMem != nullptr) {
+        sh_mem_destroy(sharedMem);
         CLI_PRINTF("Memoria compartida liberada");
     }
     if (canal_cli_cine != nullptr) {
@@ -219,8 +218,8 @@ int main() {
     }
     CLI_PRINTF("Canal de comunicacion entre cliente y cine creado");
 
-    shmemId = sh_mem_create(cli_id, sharedData);
-    if (shmemId == -1) {
+    sharedMem = sh_mem_create(cli_id);
+    if (sharedMem == NULL) {
         CLI_PRINTF("Error al crear memoria compartida entre cliente y cliente_asyn: %s", strerror(errno));
         liberarYSalir();
     }
@@ -290,11 +289,11 @@ int main() {
     char dummy[12];
     fgets(dummy, 12, stdin);
 
-    // *** TOMAR LOCK
-    if (sharedData->dirty) {
-        memcpy(asiento_habilitado, sharedData->asientos, MAX_ASIENTOS * sizeof(int));
-        asientosEnSala = sharedData->cantidad;
-        // *** LIBERAR LOCK
+    shmem_data sharedData;
+    sh_mem_read(sharedMem, &sharedData);
+    if (sharedData.dirty) {
+        memcpy(asiento_habilitado, sharedData.asientos, MAX_ASIENTOS * sizeof(int));
+        asientosEnSala = sharedData.cantidad;
         printf("\nATENCION! Ahora hay %i asientos en total en la sala\n", asientosEnSala);
         for (int j = 0; j < asientosEnSala; j++) {
             printf("%c", asiento_habilitado[j] == DISPONIBLE ? 'O' : 'X');

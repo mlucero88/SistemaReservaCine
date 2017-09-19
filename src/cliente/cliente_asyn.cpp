@@ -13,13 +13,13 @@
 
 int shmemId;
 canal *canal_cli_admin = nullptr;
-shmem_data *sharedData = nullptr;
+shmem *sharedMem = nullptr;
 FILE *asyncli_log = nullptr;
 
 void liberarYSalir() {
     CLI_PRINTF("Preparando para salir...");
-    if (sharedData != nullptr) {
-        sh_mem_release(sharedData);
+    if (sharedMem != nullptr) {
+        sh_mem_release(sharedMem);
         CLI_PRINTF("Memoria compartida liberada");
     }
     if (canal_cli_admin != nullptr) {
@@ -58,8 +58,8 @@ int main(int argc, char *argv[]) {
     }
     CLI_PRINTF("Canal de comunicacion entre cliente y admin creado");
 
-    sharedData = sh_mem_get(cli_pid);
-    if (sharedData == NULL) {
+    sharedMem = sh_mem_get(cli_pid);
+    if (sharedMem == NULL) {
         CLI_PRINTF("Error al obtener memoria compartida entre cliente y cliente_asyn: %s", strerror(errno));
         liberarYSalir();
     }
@@ -71,14 +71,16 @@ int main(int argc, char *argv[]) {
             liberarYSalir();
         }
         CLI_PRINTF("Recibida actualizacion de sala %i", msg.op.info_asientos.nro_sala + 1);
-        // TODO ***** TOMAR LOCK *****
-        sharedData->cantidad = msg.op.info_asientos.cant_asientos;
-        memcpy(sharedData->asientos, msg.op.info_asientos.asiento_habilitado, sizeof(int) * sharedData->cantidad);
 
-        for (int i = 0; i < MAX_ASIENTOS; i++) {
+        shmem_data data;
+		data.cantidad = msg.op.info_asientos.cant_asientos;
+        memcpy(data.asientos, msg.op.info_asientos.asiento_habilitado, sizeof(int) * data.cantidad);
+        data.dirty = true;
+
+        sh_mem_write(sharedMem, &data);
+
+        for (int i = 0; i < msg.op.info_asientos.cant_asientos; i++) {
             CLI_PRINTF("(%i)", msg.op.info_asientos.asiento_habilitado[i]);
         }
-        sharedData->dirty = true;
-        // TODO ***** LIBERAR LOCK *****
     }
 }
