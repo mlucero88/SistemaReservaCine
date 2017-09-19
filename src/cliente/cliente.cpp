@@ -275,7 +275,7 @@ int main() {
 
     msg = recibir_info_sala();
     printf("\nHay %i asientos en total en la sala\n", msg.op.info_asientos.cant_asientos);
-    for (int j = 0; j < msg.op.info_asientos.cant_asientos; j++) {
+    for (int j = 0; j < MAX_ASIENTOS; j++) {
         printf("%c", msg.op.info_asientos.asiento_habilitado[j] == DISPONIBLE ? 'O' : 'X');
     }
     printf("\n");
