@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
     int salas_clientes[MAX_SALAS][MAX_CLIENTES];
     int n_salas_clientes[MAX_SALAS];
     int reservas[MAX_SALAS][MAX_ASIENTOS]; // En cada posición está el id del cliente que reservó ese asiento
-    memset(reservas, 0, sizeof(int) * MAX_ASIENTOS * MAX_ASIENTOS);
+    memset(reservas, 0, sizeof(int) * MAX_SALAS * MAX_ASIENTOS);
     memset(n_salas_clientes, 0, sizeof(int) * MAX_SALAS); // Lleno con ceros -> no hay clientes
     memset(salas_clientes, 0, sizeof(int) * MAX_SALAS * MAX_CLIENTES); // Lleno con ceros -> no hay clientes
 
