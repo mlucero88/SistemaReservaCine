@@ -8,7 +8,7 @@
 #include "../common/color_print.h"
 #include "../common/operaciones.h"
 
-#define CLI_LOG stdout
+#define CLI_LOG asyncli_log
 #define CLI_PRINTF(fmt, ...) FPRINTF(CLI_LOG, RED, fmt, ##__VA_ARGS__)
 
 int shmemId;
@@ -40,12 +40,9 @@ void sighandler(int signum) {
 
 int main(int argc, char *argv[]) {
     pid_t pid = getpid();
-    for (int i = 0; i < 10; i++) {
-        CLI_PRINTF("*** Cliente asyn iniciado ***");
-    }
-//	char logName[64];
-//	sprintf(logName, "./asyncli_%i" ".log", pid);
-//	asyncli_log = fopen(logName, "w");
+	char logName[64];
+	sprintf(logName, "./asyncli_%i" ".log", pid);
+	asyncli_log = fopen(logName, "w");
     signal(SIGINT, sighandler);
 
 
@@ -73,7 +70,7 @@ int main(int argc, char *argv[]) {
             CLI_PRINTF("Error al recibir mensaje de INFORMAR_ASIENTOS: %s", strerror(errno));
             liberarYSalir();
         }
-        CLI_PRINTF("Recibida actualizacion de sala %i", msg.op.info_asientos.nro_sala);
+        CLI_PRINTF("Recibida actualizacion de sala %i", msg.op.info_asientos.nro_sala + 1);
         // TODO ***** TOMAR LOCK *****
         sharedData->cantidad = msg.op.info_asientos.cant_asientos;
         memcpy(sharedData->asientos, msg.op.info_asientos.asiento_habilitado, sizeof(int) * sharedData->cantidad);

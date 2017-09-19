@@ -8,7 +8,7 @@
 #include "../common/ipc/sh_mem.h"
 #include "../common/color_print.h"
 
-#define CLI_LOG stdout
+#define CLI_LOG cli_log
 #define CLI_PRINTF(fmt, ...) FPRINTF(CLI_LOG, BLUE, fmt, ##__VA_ARGS__)
 
 int shmemId;
@@ -256,15 +256,17 @@ int main() {
         printf("\nElija sala: ");
         char sala_str[12];
         fgets(sala_str, 12, stdin);
-        sala = atoi(sala_str);
-        //scanf("%d", &sala);
-        if (sala < 1 || sala >= msg.op.info_salas.cant_salas + 1) {
+        if(strcmp(sala_str, "\n") == 0) {
+        	continue;
+        }
+        strtok(sala_str, "\n");
+        sala = atoi(sala_str) - 1;
+        if (sala < 0 || sala >= msg.op.info_salas.cant_salas) {
             printf("Nro de sala invalida!\n");
-        } else if (msg.op.info_salas.asientos_por_sala[sala - 1] <= 0) {
+        } else if (msg.op.info_salas.asientos_por_sala[sala] <= 0) {
             printf("Sala llena!\n");
         } else {
             salaElegida = true;
-            sala = sala - 1; // La sala 1 en realidad es la 0 ...
         }
     } while (!salaElegida);
 
@@ -274,51 +276,44 @@ int main() {
 
     msg = recibir_info_sala();
     printf("\nHay %i asientos en total en la sala\n", msg.op.info_asientos.cant_asientos);
-    for (int j = 0; j < MAX_ASIENTOS; j++) {
+    for (int j = 0; j < msg.op.info_asientos.cant_asientos; j++) {
         printf("%c", msg.op.info_asientos.asiento_habilitado[j] == DISPONIBLE ? 'O' : 'X');
     }
     printf("\n");
 
     /******* ELEGIR ASIENTOS *********/
 
-    // TODO LEER DE LA MEMORIA COMPARTIDA LOS ASIENTOS QUE HAY
-
-    int asiento_habilitado[MAX_ASIENTOS];
-
+    int asiento_habilitado[MAX_ASIENTOS], asientosEnSala = msg.op.info_asientos.cant_asientos;
     memcpy(asiento_habilitado, msg.op.info_asientos.asiento_habilitado, MAX_ASIENTOS * sizeof(int));
 
-    //kill(pid_asyn,SIGINT); // Le aviso al cliente_asyn que ya no lo necesito ???
-
-    printf("ENTER para elegir asientos (a partir de ahora no se actualizan los asientos de la sala): \n");
-
-    getchar();
-
+    printf("ENTER para elegir asientos (a partir de ahora no se actualizaran los asientos de la sala)");
+    char dummy[12];
+    fgets(dummy, 12, stdin);
 
     // *** TOMAR LOCK
     if (sharedData->dirty) {
         memcpy(asiento_habilitado, sharedData->asientos, MAX_ASIENTOS * sizeof(int));
-        printf("\nAhora hay %i asientos en total en la sala\n", sharedData->cantidad);
-        for (int j = 0; j < MAX_ASIENTOS; j++) {
+        asientosEnSala = sharedData->cantidad;
+        // *** LIBERAR LOCK
+        printf("\nATENCION! Ahora hay %i asientos en total en la sala\n", asientosEnSala);
+        for (int j = 0; j < asientosEnSala; j++) {
             printf("%c", asiento_habilitado[j] == DISPONIBLE ? 'O' : 'X');
         }
         printf("\n");
     }
-    // *** LIBERAR LOCK y matar cliente asyn
 
-    printf("\nAhora hay en la sala :\n");
-    for (int j = 0; j < MAX_ASIENTOS; j++) {
-        printf("%c", asiento_habilitado[j] == DISPONIBLE ? 'O' : 'X');
-    }
-    printf("\n");
-
-    int asientos[MAX_ASIENTOS_RESERVADOS], asiento, cantAsientos = 0;
-    memset(asientos, 0, MAX_ASIENTOS_RESERVADOS * sizeof(int));
+    int asientos_elegidos[MAX_ASIENTOS_RESERVADOS], asiento, cantAsientos = 0;
+    memset(asientos_elegidos, 0, MAX_ASIENTOS_RESERVADOS * sizeof(int));
 
     bool finEleccionAsientos = false;
     do {
         printf("\nElija un asiento (-1 para finalizar eleccion)(el primer asiento es 0): ");
         char asiento_str[12];
         fgets(asiento_str, 12, stdin);
+        if(strcmp(asiento_str, "\n") == 0) {
+        	continue;
+        }
+        strtok(asiento_str, "\n");
         asiento = atoi(asiento_str);
         if (asiento == -1) {
             if (cantAsientos > 0) {
@@ -326,38 +321,60 @@ int main() {
             } else {
                 printf("Debe elegir al menos un asiento!\n");
             }
-        } else if (asientos >= 0 && asiento_habilitado[asiento] == DISPONIBLE) {
-            asientos[cantAsientos++] = asiento;
-            printf("Asiento %i agregado\n", asiento);
-            if (cantAsientos == MAX_ASIENTOS_RESERVADOS) {
-                finEleccionAsientos = true;
-            }
+        } else if (asiento >= 0 && asiento < asientosEnSala) {
+        	if(asiento_habilitado[asiento] == DISPONIBLE) {
+        		asientos_elegidos[cantAsientos++] = asiento;
+        		asiento_habilitado[asiento] = RESERVADO;
+        		printf("Asiento %i agregado\n", asiento);
+        		if (cantAsientos == MAX_ASIENTOS_RESERVADOS) {
+        			finEleccionAsientos = true;
+        		}
+        	}
+        	else {
+        		printf("Asiento no disponible\n");
+        	}
         } else {
             printf("Nro de asiento invalido!\n");
         }
     } while (!finEleccionAsientos);
 
-    elegir_asientos(asientos, cantAsientos, sala);
+    elegir_asientos(asientos_elegidos, cantAsientos, sala);
 
     /******* RECIBIR INFO RESERVA *********/
 
     msg = recibir_info_reserva();
-    printf("\nSe reservaron %i/%i asientos:\n", msg.op.info_reserva.cant_reservados, cantAsientos);
-//    for (int i = 0; i < msg.op.info_reserva.cant_reservados; i++) {
-//        printf(" %i", msg.op.info_reserva.asientos_reservados[i]);
-//    }
-//    printf("\n");
-
+    printf("\nSe reservaron %i/%i asientos: ", msg.op.info_reserva.cant_reservados, cantAsientos);
     for (int i = 0; i < MAX_ASIENTOS_RESERVADOS; i++) {
         if (msg.op.info_reserva.asientos_reservados[i]) {
-            printf(" %i\n", asientos[i]);
+            printf(" %i", asientos_elegidos[i]);
         }
     }
+    printf("\n");
 
     /******* CONFIRMAR RESERVA *********/
 
-    bool aceptarReserva = true; // TODO Harcodeo de aceptar. capaz hay q contemplar el caso q no aceptamos (ver una vez q terminemos lo otro)
+    bool aceptarReserva = false;
+    while(1) {
+    	fflush(stdin);
+        printf("\nDesea confirmar la reserva [S/N]? ");
+        char c[12];
+        fgets(c, 12, stdin); // Por si el cliente escribe cosas de mas
+        if(c[0] == 'S' || c[0] == 's') {
+        	aceptarReserva = true;
+        	break;
+        }
+        else if(c[0] == 'N' || c[0] == 'n') {
+        	break;
+        }
+        printf("Respuesta invalida!\n");
+    }
+
     confirmar_reserva(aceptarReserva);
+
+    if(!aceptarReserva) {
+    	printf("\nReserva cancelada. Gracias por operar con red SARASA\n");
+    	liberarYSalir();
+    }
 
     /******* RECIBIR INFO PAGO *********/
 
