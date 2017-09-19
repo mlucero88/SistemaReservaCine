@@ -6,7 +6,7 @@
 #include "../common/colors.h"
 
 void mostrar_asientos(int n_sala, int asientos_salas[MAX_SALAS][MAX_ASIENTOS]) {
-    printf("\nHay %i asientos en total en la sala\n", n_sala);
+    printf("\nHay %i asientos en total en la sala\n", n_sala + 1);
     for (int j = 0; j < MAX_ASIENTOS; j++) {
         printf("%c\n", asientos_salas[n_sala][j] == DISPONIBLE ? 'O' : 'X');
     }
@@ -25,7 +25,7 @@ void informar_asientos(mensaje_t *m, canal *canal_cine_admin, int cine_id, int a
             break;
         }
     }
-    printf("%sCLIENTE %i en la sala %i\n", KBLU, m->mtype, nro_sala);
+    printf("%sCLIENTE %i en la sala %i\n", KBLU, m->mtype, nro_sala + 1);
     n_salas_clientes[nro_sala]++; // entra un nuevo cliente a la sala;
 
     mostrar_asientos(nro_sala, asientos_salas);
@@ -155,8 +155,8 @@ void cancelar_reservas(int reservas[MAX_SALAS][MAX_ASIENTOS], int asientos_salas
 }
 
 int main(int argc, char *argv[]) {
-
-    int n_salas = rand() % MAX_SALAS; // Cantidad de salas que hay en total
+	srand(time(NULL));
+    int n_salas = 1 + (rand() % MAX_SALAS); // Cantidad de salas que hay en total
     printf("Cantidad de salas: %i\n", n_salas);
     int n_asientos_salas[MAX_SALAS]; // Cantidad de asientos que hay en cada sala
     int asientos_salas[MAX_SALAS][MAX_ASIENTOS]; // Asientos disponibles/ocupados en cada sala
@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
 
         if (msg.tipo == ELEGIR_SALA) {
             printf("%s[ADMIN] INFORMAR_ASIENTOS para %i\n", KGRN, cine_id);
-            printf("NRO DE SALA RECIBIDO ADMIN: %i\n", msg.op.elegir_sala.nro_sala);
+            printf("NRO DE SALA RECIBIDO ADMIN: %i\n", msg.op.elegir_sala.nro_sala + 1);
             informar_asientos(&msg, canal_cine_admin, cine_id, asientos_salas, n_asientos_salas, salas_clientes,
                               n_salas_clientes);
 

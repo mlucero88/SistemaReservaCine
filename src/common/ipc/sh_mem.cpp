@@ -26,7 +26,7 @@ shmem* sh_mem_create(int n) {
 				mem->data = mem_ptr;
 				memset(&mem->lock, 0, sizeof(flock));
 				mem->lock.l_type = F_WRLCK;
-				mem->lockFd = open("../compilar.sh", O_WRONLY);
+				mem->lockFd = open("../README.md", O_WRONLY);
 				return mem;
 			}
 			shmctl(id, IPC_RMID, NULL);
@@ -39,6 +39,7 @@ void sh_mem_destroy(shmem* mem) {
 	if (mem != NULL) {
 		shmdt(static_cast<void*>(mem->data));
 		shmctl(mem->id, IPC_RMID, NULL);
+		close(mem->lockFd);
 		free(mem);
 	}
 }
@@ -53,6 +54,9 @@ shmem* sh_mem_get(int n) {
 				shmem *mem = (shmem *) malloc(sizeof(shmem));
 				mem->id = id;
 				mem->data = mem_ptr;
+				memset(&mem->lock, 0, sizeof(flock));
+				mem->lock.l_type = F_WRLCK;
+				mem->lockFd = open("../README.md", O_WRONLY);
 				return mem;
 			}
 		}
@@ -63,6 +67,7 @@ shmem* sh_mem_get(int n) {
 void sh_mem_release(shmem* mem) {
 	if (mem != NULL) {
 		shmdt(static_cast<void*>(mem->data));
+		close(mem->lockFd);
 		free(mem);
 	}
 }

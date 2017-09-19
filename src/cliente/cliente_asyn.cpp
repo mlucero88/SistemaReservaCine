@@ -41,7 +41,7 @@ void sighandler(int signum) {
 int main(int argc, char *argv[]) {
     pid_t pid = getpid();
 	char logName[64];
-	sprintf(logName, "./asyncli_%i" ".log", pid);
+	sprintf(logName, "../logs/asyncli_%i" ".log", pid);
 	asyncli_log = fopen(logName, "w");
     signal(SIGINT, sighandler);
 

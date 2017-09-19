@@ -195,7 +195,7 @@ void recibir_pago_ok() {
 int main() {
     int cli_id = getpid();
     char logName[64];
-    sprintf(logName, "./cli_%i" ".log", cli_id);
+    sprintf(logName, "../logs/cli_%i" ".log", cli_id);
     cli_log = fopen(logName, "w");
     signal(SIGINT, sighandler);
 
