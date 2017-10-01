@@ -84,12 +84,12 @@ int main() {
 
     /* INICIALIZAR */
 
-    int m_id = m_init();
+    m_id mom_id = m_init();
     int result;
 
     /* LOGIN */
 
-    result = m_login(m_id, cli_id);
+    result = m_login(mom_id, cli_id);
     if (result != 0) {
         CLI_PRINTF("ERROR: no se pudo hacer LOGIN");
     }
@@ -97,7 +97,7 @@ int main() {
     /* INFO GENERAL DE LAS SALAS */
     int info_salas[MAX_SALAS];
     int cant_salas;
-    result = m_info_salas(m_id, info_salas, &cant_salas);
+    result = m_info_salas(mom_id, info_salas, &cant_salas);
     if (result != 0) {
         CLI_PRINTF("ERROR: no se pudo obtener la info de las salas");
     }
@@ -107,7 +107,7 @@ int main() {
     int asientos_habilitados[MAX_ASIENTOS];
     int cant_asientos;
     int nro_sala = pedir_sala(info_salas, cant_salas);
-    result = m_asientos_sala(m_id, nro_sala, asientos_habilitados, &cant_asientos);
+    result = m_asientos_sala(mom_id, nro_sala, asientos_habilitados, &cant_asientos);
     if (result != 0) {
         CLI_PRINTF("ERROR: no se pudo obtener la info de las sala elegida");
     }
@@ -118,7 +118,7 @@ int main() {
     int cant_elegidos = pedir_asientos(asientos_habilitados, cant_asientos, asientos_elegidos);
     int asientos_reservados[MAX_ASIENTOS_RESERVADOS];
     int cant_reservados;
-    result = m_reservar_asientos(m_id, asientos_elegidos, cant_elegidos, nro_sala, asientos_reservados,
+    result = m_reservar_asientos(mom_id, asientos_elegidos, cant_elegidos, nro_sala, asientos_reservados,
                                  &cant_reservados);
     if (result != 0) {
         CLI_PRINTF("ERROR: no se pudo reservar los asientos");
@@ -134,7 +134,7 @@ int main() {
         liberarYSalir();
     }
     int precio;
-    result = m_confirmar_reserva(m_id, confirmacion, &precio);
+    result = m_confirmar_reserva(mom_id, confirmacion, &precio);
     if (result != 0) {
         CLI_PRINTF("ERROR: no se pudo confirmar la reserva");
     }
@@ -149,7 +149,7 @@ int main() {
 
     printf("Esperando respuesta de pago...\n");
 
-    result = m_pagar(m_id);
+    result = m_pagar(mom_id);
     if (result != 0) {
         CLI_PRINTF("ERROR: no se pudo confirmar la reserva");
     }
