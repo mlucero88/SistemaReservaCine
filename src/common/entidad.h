@@ -3,13 +3,8 @@
 
 #include <unistd.h>
 
-struct entidad_t {
-    enum proceso_t {
-        CINE, CLIENTE, ADMIN
-    } proceso;
-
-    pid_t pid;
-    // extension a futuro
+enum proceso_t {
+    CINE, CLIENTE, ADMIN, MOM
 };
 
 #endif /* COMMON_ENTIDAD_H_ */

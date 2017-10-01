@@ -55,9 +55,12 @@ int recibir_msj(mensaje_t &msg, canal *canal_cli_mom, int tipo) {
 
 /* Inicia el MOM cliente. */
 m_id m_init() {
-    entidad_t cliente = {.proceso = entidad_t::CLIENTE, .pid = getpid()};
-    entidad_t cine = {.proceso = entidad_t::CINE, .pid = -1};
-    canal *canal_cli_mom = canal_crear(cliente, mom);
+    if (fork() == 0) {
+        execl("./mom_cliente", "mom_cliente", NULL);
+        perror("Error al iniciar el MOM: ");
+        exit(1);
+    }
+    canal *canal_cli_mom = canal_crear(proceso_t::CLIENTE, proceso_t::MOM);
     return (void *) (canal_cli_mom);
 }
 
@@ -65,6 +68,7 @@ m_id m_init() {
 void m_dest(m_id id) {
     canal *canal_cli_mom = (canal *) id;
     canal_destruir(canal_cli_mom);
+    // Acá va el wait() para el MOM
 }
 
 
@@ -94,7 +98,12 @@ int m_info_salas(m_id id, int asientos_por_sala[MAX_SALAS], int *cant_salas) {
 }
 
 /*Carga en asientos_sala los asientos que están DISPONIBLE o NO_DISPONIBLE para la sala nro_sala. */
-int m_asientos_sala(m_id id, int nro_sala, int asientos_sala[MAX_ASIENTOS]) {
+
+int m_asientos_sala(m_id id, int nro_sala, int asientos_habilitados[MAX_ASIENTOS],
+                    int *cant_asientos);
+
+int m_asientos_sala(m_id id, int nro_sala, int asientos_habilitados[MAX_ASIENTOS],
+                    int *cant_asientos) {
     canal *canal_cli_mom = (canal *) id;
     mensaje_t msg = {.mtype = getpid(), .tipo = ELEGIR_SALA}; // todo cambiar getpid por cli_id
     msg.op.elegir_sala.nro_sala = nro_sala;
@@ -109,7 +118,8 @@ int m_asientos_sala(m_id id, int nro_sala, int asientos_sala[MAX_ASIENTOS]) {
         return r;
     }
 
-    memcpy(asientos_sala, msg.op.info_asientos.asiento_habilitado, MAX_ASIENTOS * sizeof(int));
+    memcpy(asientos_habilitados, msg.op.info_asientos.asiento_habilitado, MAX_ASIENTOS * sizeof(int));
+    *cant_asientos = msg.op.info_asientos.cant_asientos;
 
     return RET_OK;
 

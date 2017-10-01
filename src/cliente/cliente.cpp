@@ -2,20 +2,14 @@
 #include <cstring>
 #include <cstdlib>
 #include <csignal>
-#include <sys/wait.h>
 
 #include "../common/canal.h"
-#include "../common/ipc/sh_mem.h"
 #include "../common/color_print.h"
 #include "interfaz.h"
 
 #define CLI_LOG cli_log
 #define CLI_PRINTF(fmt, ...) FPRINTF(CLI_LOG, BLUE, fmt, ##__VA_ARGS__)
 
-int shmemId;
-pid_t pid_asyn = 0;
-canal *canal_cli_cine = nullptr;
-shmem *sharedMem = nullptr;
 FILE *cli_log = nullptr;
 
 bool pedir_confirmacion_reserva();
@@ -30,31 +24,10 @@ int pedir_sala(int asientos_por_sala[MAX_SALAS], int cant_salas);
 void mostrar_asientos_reservados(int asientos_elegidos[MAX_ASIENTOS_RESERVADOS], int cant_elegidos,
                                  int asientos_reservados[MAX_ASIENTOS_RESERVADOS], int cant_reservados);
 
-void mostrar_asientos(int asientos[MAX_ASIENTOS]) {
-    for (int j = 0; j < MAX_ASIENTOS; j++) {
-        printf("%c", asientos[j] == DISPONIBLE ? 'O' : 'X');
-    }
-    printf("\n");
-}
+void mostrar_asientos(int asientos[MAX_ASIENTOS]);
 
 void liberarYSalir() {
     CLI_PRINTF("Preparando para salir...");
-    if (pid_asyn > 0) {
-        int status;
-        kill(pid_asyn, SIGINT);
-        wait(&status);
-        CLI_PRINTF("Cliente asincronico cerrado");
-    }
-
-    if (sharedMem != nullptr) {
-        sh_mem_destroy(sharedMem);
-        CLI_PRINTF("Memoria compartida liberada");
-    }
-    if (canal_cli_cine != nullptr) {
-        canal_destruir(canal_cli_cine);
-        CLI_PRINTF("Canal destruido");
-    }
-
     CLI_PRINTF("*** Aplicacion cerrada ***");
     fclose(cli_log);
     exit(1);
@@ -98,7 +71,7 @@ int main() {
     int info_salas[MAX_SALAS];
     int cant_salas;
     result = m_info_salas(mom_id, info_salas, &cant_salas);
-    if (result != 0) {
+    if (result != RET_OK) {
         CLI_PRINTF("ERROR: no se pudo obtener la info de las salas");
     }
     mostrar_info_salas(info_salas, cant_salas);
@@ -108,7 +81,7 @@ int main() {
     int cant_asientos;
     int nro_sala = pedir_sala(info_salas, cant_salas);
     result = m_asientos_sala(mom_id, nro_sala, asientos_habilitados, &cant_asientos);
-    if (result != 0) {
+    if (result != RET_OK) {
         CLI_PRINTF("ERROR: no se pudo obtener la info de las sala elegida");
     }
     mostrar_asientos(asientos_habilitados);
@@ -120,7 +93,7 @@ int main() {
     int cant_reservados;
     result = m_reservar_asientos(mom_id, asientos_elegidos, cant_elegidos, nro_sala, asientos_reservados,
                                  &cant_reservados);
-    if (result != 0) {
+    if (result != RET_OK) {
         CLI_PRINTF("ERROR: no se pudo reservar los asientos");
     }
     printf("\nSe reservaron %i/%i asientos: ", cant_reservados, cant_elegidos);
@@ -135,7 +108,7 @@ int main() {
     }
     int precio;
     result = m_confirmar_reserva(mom_id, confirmacion, &precio);
-    if (result != 0) {
+    if (result != RET_OK) {
         CLI_PRINTF("ERROR: no se pudo confirmar la reserva");
     }
 
@@ -149,8 +122,8 @@ int main() {
 
     printf("Esperando respuesta de pago...\n");
 
-    result = m_pagar(mom_id);
-    if (result != 0) {
+    result = m_pagar(mom_id, precio);
+    if (result != RET_OK) {
         CLI_PRINTF("ERROR: no se pudo confirmar la reserva");
     }
     printf("\nPago aceptado. Gracias por operar con red SARASA\n");
@@ -255,4 +228,11 @@ int pedir_sala(int asientos_por_sala[MAX_SALAS], int cant_salas) {
         }
     } while (!salaElegida);
     return nro_sala;
+}
+
+void mostrar_asientos(int *asientos) {
+    for (int j = 0; j < MAX_ASIENTOS; j++) {
+        printf("%c", asientos[j] == DISPONIBLE ? 'O' : 'X');
+    }
+    printf("\n");
 }

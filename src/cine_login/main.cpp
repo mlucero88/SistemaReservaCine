@@ -13,10 +13,7 @@ int main() {
     sigemptyset(&sigchld.sa_mask);
     sigaction(SIGCHLD, &sigchld, NULL);
 
-    entidad_t cine = {.proceso = entidad_t::CINE, .pid = getpid()};
-    entidad_t cliente = {.proceso = entidad_t::CLIENTE, .pid = -1};
-
-    canal *canal_cine_cli = canal_crear(cine, cliente);
+    canal *canal_cine_cli = canal_crear(proceso_t::CINE, proceso_t::CLIENTE);
     if (canal_cine_cli == NULL) {
         std::cerr << "Error al crear canal de comunicacion entre cine y cliente" << std::endl;
         exit(1);

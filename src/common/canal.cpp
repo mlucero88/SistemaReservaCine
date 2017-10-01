@@ -3,35 +3,35 @@
 #include <cstdlib>
 
 struct canal {
-    entidad_t local;
-    entidad_t remoto;
+    proceso_t local;
+    proceso_t remoto;
     int id_queue_envio;
     int id_queue_recepcion;
 };
 
-canal *canal_crear(entidad_t local, entidad_t remoto) {
+canal *canal_crear(proceso_t local, proceso_t remoto) {
     int id_q_envio = -1, id_q_recep = -1;
 
-    if (local.proceso == entidad_t::CINE) {
-        if (remoto.proceso == entidad_t::ADMIN) {
+    if (local == proceso_t::CINE) {
+        if (remoto == proceso_t::ADMIN) {
             id_q_envio = msg_queue_get(Q_CINE_ADMIN);
             id_q_recep = msg_queue_get(Q_ADMIN_CINE);
-        } else if (remoto.proceso == entidad_t::CLIENTE) {
+        } else if (remoto == proceso_t::CLIENTE) {
             id_q_envio = msg_queue_get(Q_CINE_CLI);
             id_q_recep = msg_queue_get(Q_CLI_CINE);
         }
-    } else if (local.proceso == entidad_t::ADMIN) {
-        if (remoto.proceso == entidad_t::CINE) {
+    } else if (local == proceso_t::ADMIN) {
+        if (remoto == proceso_t::CINE) {
             id_q_envio = msg_queue_get(Q_ADMIN_CINE);
             id_q_recep = msg_queue_get(Q_CINE_ADMIN);
-        } else if (remoto.proceso == entidad_t::CLIENTE) {
+        } else if (remoto == proceso_t::CLIENTE) {
             id_q_envio = id_q_recep = msg_queue_get(Q_ADMIN_CLI);
         }
-    } else if (local.proceso == entidad_t::CLIENTE) {
-        if (remoto.proceso == entidad_t::CINE) {
+    } else if (local == proceso_t::CLIENTE) {
+        if (remoto == proceso_t::CINE) {
             id_q_envio = msg_queue_get(Q_CLI_CINE);
             id_q_recep = msg_queue_get(Q_CINE_CLI);
-        } else if (remoto.proceso == entidad_t::ADMIN) {
+        } else if (remoto == proceso_t::ADMIN) {
             id_q_envio = id_q_recep = msg_queue_get(Q_ADMIN_CLI);
         }
     }

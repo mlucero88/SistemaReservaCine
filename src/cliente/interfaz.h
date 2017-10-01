@@ -23,6 +23,6 @@ int m_reservar_asientos(m_id id, int asientos_elegidos[MAX_ASIENTOS_RESERVADOS],
 
 int m_confirmar_reserva(m_id id, bool aceptar, int *precio);
 
-int m_pagar(m_id id);
+int m_pagar(m_id id, int precio);
 
 #endif //PROYECTO_INTERFAZ_H
