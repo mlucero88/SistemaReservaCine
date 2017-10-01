@@ -158,7 +158,7 @@ void cancelar_reservas(int reservas[MAX_SALAS][MAX_ASIENTOS], int asientos_salas
 }
 
 int main(int argc, char *argv[]) {
-	srand(time(NULL));
+    srand(time(NULL));
     int n_salas = 1 + (rand() % MAX_SALAS); // Cantidad de salas que hay en total
     printf("Cantidad de salas: %i\n", n_salas);
     int n_asientos_salas[MAX_SALAS]; // Cantidad de asientos que hay en cada sala

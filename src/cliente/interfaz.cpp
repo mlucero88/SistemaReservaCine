@@ -39,6 +39,7 @@ int m_init() {
     return (int) (canal_cli_mom);
 }
 
+/* Loguea al cliente. */
 int m_login(int id, int cli_id) {
     mensaje_t msg = {.mtype = LOGIN_MSG_TYPE, .tipo = LOGIN};
     canal *canal_cli_mom = (canal *) id;
@@ -51,6 +52,8 @@ int m_login(int id, int cli_id) {
     return 0; // u otra cosa?
 }
 
+/* Carga en asientos_por_sala[i] la cantidad de asientos que hay en la sala [i], y en cant_salas la cantidad de salas
+ * que hay en total. */
 int m_info_salas(int id, int asientos_por_sala[MAX_SALAS], int *cant_salas) {
     canal *canal_cli_mom = (canal *) id;
     mensaje_t msg;
@@ -76,6 +79,7 @@ int m_info_salas(int id, int asientos_por_sala[MAX_SALAS], int *cant_salas) {
     return 0;
 }
 
+/*Carga en asientos_sala los asientos que están DISPONIBLE o NO_DISPONIBLE para la sala nro_sala. */
 int m_asientos_sala(int id, int nro_sala, int asientos_sala[MAX_ASIENTOS]) {
     canal *canal_cli_mom = (canal *) id;
     mensaje_t msg = {.mtype = getpid(), .tipo = ELEGIR_SALA}; // todo cambiar getpid por cli_id
@@ -110,13 +114,16 @@ int m_asientos_sala(int id, int nro_sala, int asientos_sala[MAX_ASIENTOS]) {
 
 }
 
-int m_reservar_asientos(int id, int asientos[MAX_ASIENTOS_RESERVADOS], int cantAsientos, int sala,
+/* Intenta reservar los asientos en la sala indicada. Recibe la cantidad de asientos a reservar y el número de la sala.
+ * Además, pone en asientos_reservados[i] = 1 si el asiento en asientos[i] pudo ser reservado o 0 si no. En cant_reservados,
+ * se indica la cantidad de asientos que sí pudieron ser reservados. */
+int m_reservar_asientos(int id, int asientos_elegidos[MAX_ASIENTOS_RESERVADOS], int cant_elegidos, int nro_sala,
                         int asientos_reservados[MAX_ASIENTOS_RESERVADOS], int *cant_reservados) {
     canal *canal_cli_mom = (canal *) id;
     mensaje_t msg = {.mtype = getpid(), .tipo = ELEGIR_ASIENTOS};
-    msg.op.elegir_asientos.nro_sala = sala;
-    memcpy(msg.op.elegir_asientos.asientos_elegidos, asientos, sizeof(int) * cantAsientos);
-    msg.op.elegir_asientos.cant_elegidos = cantAsientos;
+    msg.op.elegir_asientos.nro_sala = nro_sala;
+    memcpy(msg.op.elegir_asientos.asientos_elegidos, asientos_elegidos, sizeof(int) * cant_elegidos);
+    msg.op.elegir_asientos.cant_elegidos = cant_elegidos;
     if (!canal_enviar(canal_cli_mom, msg)) {
         CLI_PRINTF("Error al enviar mensaje de ELEGIR_ASIENTOS: %s", strerror(errno));
         liberarYSalir();
@@ -147,12 +154,14 @@ int m_reservar_asientos(int id, int asientos[MAX_ASIENTOS_RESERVADOS], int cantA
 
 }
 
-
+/* Envia confirmación, o no, según indique aceptar. Si se acepta la reserva, se carga el precio a pagar en precio. */
 int m_confirmar_reserva(int id, bool aceptar, int *precio) {
     // todo cambiar getpid por cli_id
     canal *canal_cli_mom = (canal *) id;
     mensaje_t msg = {.mtype = getpid(), .tipo = CONFIRMAR_RESERVA};
-    msg.op.confirmar_reserva.reserva_confirmada = aceptar ? true : false;
+
+
+    msg.op.confirmar_reserva.reserva_confirmada = aceptar;
     if (!canal_enviar(canal_cli_mom, msg)) {
         CLI_PRINTF("Error al enviar mensaje de CONFIRMAR_RESERVA: %s", strerror(errno));
         liberarYSalir();
@@ -180,6 +189,7 @@ int m_confirmar_reserva(int id, bool aceptar, int *precio) {
     return 0;
 }
 
+/* Realiza el pago para la reserva. Se pasa el precio a pagar. */
 int m_pagar(int id, int precio) {
     canal *canal_cli_mom = (canal *) id;
     mensaje_t msg = {.mtype = getpid(), .tipo = PAGAR};

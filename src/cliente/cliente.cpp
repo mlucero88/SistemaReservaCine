@@ -1,4 +1,4 @@
-#include <cerrno>
+
 #include <cstring>
 #include <cstdlib>
 #include <csignal>
@@ -7,6 +7,7 @@
 #include "../common/canal.h"
 #include "../common/ipc/sh_mem.h"
 #include "../common/color_print.h"
+#include "interfaz.h"
 
 #define CLI_LOG cli_log
 #define CLI_PRINTF(fmt, ...) FPRINTF(CLI_LOG, BLUE, fmt, ##__VA_ARGS__)
@@ -17,10 +18,29 @@ canal *canal_cli_cine = nullptr;
 shmem *sharedMem = nullptr;
 FILE *cli_log = nullptr;
 
+bool pedir_confirmacion_reserva();
+
+void mostrar_info_salas(int asientos_por_sala[MAX_SALAS], int cant_salas);
+
+int pedir_asientos(int asientos_habilitados[MAX_ASIENTOS], int cant_asientos,
+                   int asientos_elegidos[MAX_ASIENTOS_RESERVADOS]);
+
+int pedir_sala(int asientos_por_sala[MAX_SALAS], int cant_salas);
+
+void mostrar_asientos_reservados(int asientos_elegidos[MAX_ASIENTOS_RESERVADOS], int cant_elegidos,
+                                 int asientos_reservados[MAX_ASIENTOS_RESERVADOS], int cant_reservados);
+
+void mostrar_asientos(int asientos[MAX_ASIENTOS]) {
+    for (int j = 0; j < MAX_ASIENTOS; j++) {
+        printf("%c", asientos[j] == DISPONIBLE ? 'O' : 'X');
+    }
+    printf("\n");
+}
+
 void liberarYSalir() {
-	CLI_PRINTF("Preparando para salir...");
+    CLI_PRINTF("Preparando para salir...");
     if (pid_asyn > 0) {
-    	int status;
+        int status;
         kill(pid_asyn, SIGINT);
         wait(&status);
         CLI_PRINTF("Cliente asincronico cerrado");
@@ -36,7 +56,7 @@ void liberarYSalir() {
     }
 
     CLI_PRINTF("*** Aplicacion cerrada ***");
-   	fclose(cli_log);
+    fclose(cli_log);
     exit(1);
 }
 
@@ -44,152 +64,6 @@ void sighandler(int signum) {
     if (signum == SIGINT) {
         liberarYSalir();
     }
-}
-
-void login() {
-    mensaje_t msg = {.mtype = LOGIN_MSG_TYPE, .tipo = LOGIN};
-    msg.op.login.cli_id = getpid();
-    if (!canal_enviar(canal_cli_cine, msg)) {
-        CLI_PRINTF("Error al enviar mensaje de LOGIN: %s", strerror(errno));
-        liberarYSalir();
-    }
-    CLI_PRINTF("LOGIN enviado");
-}
-
-mensaje_t recibir_info_salas() {
-    mensaje_t msg;
-    if (!canal_recibir(canal_cli_cine, msg, getpid())) {
-        CLI_PRINTF("Error al recibir mensaje de INFORMAR_SALAS: %s", strerror(errno));
-        liberarYSalir();
-    }
-    if (msg.tipo != INFORMAR_SALAS) {
-        if (msg.tipo == TIMEOUT) {
-            CLI_PRINTF("TIMEOUT recibido");
-        } else {
-            CLI_PRINTF("Error: se esperaba INFORMAR_SALAS y se recibio %s", strOpType(msg.tipo));
-        }
-        liberarYSalir();
-    }
-    CLI_PRINTF("INFORMAR_SALAS recibido");
-
-    return msg;
-}
-
-void enviar_elegir_sala(int sala) {
-    mensaje_t msg = {.mtype = getpid(), .tipo = ELEGIR_SALA};
-    msg.op.elegir_sala.nro_sala = sala;
-    if (!canal_enviar(canal_cli_cine, msg)) {
-        CLI_PRINTF("Error al enviar mensaje de ELEGIR_SALA: %s", strerror(errno));
-        liberarYSalir();
-    }
-    CLI_PRINTF("ELEGIR_SALA enviado");
-}
-
-mensaje_t recibir_info_sala() {
-    mensaje_t msg;
-    if (!canal_recibir(canal_cli_cine, msg, getpid())) {
-        CLI_PRINTF("Error al recibir mensaje de INFORMAR_ASIENTOS: %s", strerror(errno));
-        liberarYSalir();
-    }
-    if (msg.tipo != INFORMAR_ASIENTOS) {
-        if (msg.tipo == TIMEOUT) {
-            CLI_PRINTF("TIMEOUT recibido");
-        } else {
-            CLI_PRINTF("Error: se esperaba INFORMAR_ASIENTOS y se recibio %s", strOpType(msg.tipo));
-        }
-        liberarYSalir();
-    }
-    CLI_PRINTF("INFORMAR_ASIENTOS recibido");
-
-    return msg;
-}
-
-void elegir_asientos(int asientos[], int cantAsientos, int sala) {
-    mensaje_t msg = {.mtype = getpid(), .tipo = ELEGIR_ASIENTOS};
-    msg.op.elegir_asientos.nro_sala = sala;
-    memcpy(msg.op.elegir_asientos.asientos_elegidos, asientos, sizeof(int) * cantAsientos);
-    msg.op.elegir_asientos.cant_elegidos = cantAsientos;
-    if (!canal_enviar(canal_cli_cine, msg)) {
-        CLI_PRINTF("Error al enviar mensaje de ELEGIR_ASIENTOS: %s", strerror(errno));
-        liberarYSalir();
-    }
-    CLI_PRINTF("ELEGIR_ASIENTOS enviado");
-}
-
-mensaje_t recibir_info_reserva() {
-    mensaje_t msg;
-    if (!canal_recibir(canal_cli_cine, msg, getpid())) {
-        CLI_PRINTF("Error al recibir mensaje de INFORMAR_RESERVA: %s", strerror(errno));
-        liberarYSalir();
-    }
-    if (msg.tipo != INFORMAR_RESERVA) {
-        if (msg.tipo == TIMEOUT) {
-            CLI_PRINTF("TIMEOUT recibido");
-            printf("Tardaste mucho :(\n");
-        } else {
-            CLI_PRINTF("Error: se esperaba INFORMAR_RESERVA y se recibio %s", strOpType(msg.tipo));
-        }
-        liberarYSalir();
-    }
-    CLI_PRINTF("INFORMAR_RESERVA recibido");
-
-    return msg;
-}
-
-void confirmar_reserva(bool aceptar) {
-    mensaje_t msg = {.mtype = getpid(), .tipo = CONFIRMAR_RESERVA};
-    msg.op.confirmar_reserva.reserva_confirmada = aceptar ? 1 : 0;
-    if (!canal_enviar(canal_cli_cine, msg)) {
-        CLI_PRINTF("Error al enviar mensaje de CONFIRMAR_RESERVA: %s", strerror(errno));
-        liberarYSalir();
-    }
-    CLI_PRINTF("CONFIRMAR_RESERVA enviado");
-}
-
-mensaje_t recibir_info_pago() {
-    mensaje_t msg;
-    if (!canal_recibir(canal_cli_cine, msg, getpid())) {
-        CLI_PRINTF("Error al recibir mensaje de INFORMAR_PAGO: %s", strerror(errno));
-        liberarYSalir();
-    }
-    if (msg.tipo != INFORMAR_PAGO) {
-        if (msg.tipo == TIMEOUT) {
-            CLI_PRINTF("TIMEOUT recibido");
-        } else {
-            CLI_PRINTF("Error: se esperaba INFORMAR_PAGO y se recibio %s", strOpType(msg.tipo));
-        }
-        liberarYSalir();
-    }
-    CLI_PRINTF("INFORMAR_PAGO recibido");
-
-    return msg;
-}
-
-void pagar(int precio) {
-    mensaje_t msg = {.mtype = getpid(), .tipo = PAGAR};
-    msg.op.pagar.pago = precio;
-    if (!canal_enviar(canal_cli_cine, msg)) {
-        CLI_PRINTF("Error al enviar mensaje de PAGAR: %s", strerror(errno));
-        liberarYSalir();
-    }
-    CLI_PRINTF("PAGAR enviado");
-}
-
-void recibir_pago_ok() {
-    mensaje_t msg;
-    if (!canal_recibir(canal_cli_cine, msg, getpid())) {
-        CLI_PRINTF("Error al recibir mensaje de PAGO_OK: %s", strerror(errno));
-        liberarYSalir();
-    }
-    if (msg.tipo != PAGO_OK) {
-        if (msg.tipo == TIMEOUT) {
-            CLI_PRINTF("TIMEOUT recibido");
-        } else {
-            CLI_PRINTF("Error: se esperaba PAGO_OK y se recibio %s", strOpType(msg.tipo));
-        }
-        liberarYSalir();
-    }
-    CLI_PRINTF("PAGO_OK recibido");
 }
 
 int main() {
@@ -208,101 +82,95 @@ int main() {
 
     CLI_PRINTF("*** Aplicacion iniciada ***");
 
-    entidad_t cliente = {.proceso = entidad_t::CLIENTE, .pid = cli_id};
-    entidad_t cine = {.proceso = entidad_t::CINE, .pid = -1};
-    mensaje_t msg;
+    /* INICIALIZAR */
 
-    canal_cli_cine = canal_crear(cliente, cine);
-    if (canal_cli_cine == NULL) {
-        CLI_PRINTF("Error al crear canal de comunicacion entre cliente y cine: %s", strerror(errno));
+    int m_id = m_init();
+    int result;
+
+    /* LOGIN */
+
+    result = m_login(m_id, cli_id);
+    if (result != 0) {
+        CLI_PRINTF("ERROR: no se pudo hacer LOGIN");
+    }
+
+    /* INFO GENERAL DE LAS SALAS */
+    int info_salas[MAX_SALAS];
+    int cant_salas;
+    result = m_info_salas(m_id, info_salas, &cant_salas);
+    if (result != 0) {
+        CLI_PRINTF("ERROR: no se pudo obtener la info de las salas");
+    }
+    mostrar_info_salas(info_salas, cant_salas);
+
+    /* ELEGIR UNA SALA */
+    int asientos_habilitados[MAX_ASIENTOS];
+    int cant_asientos;
+    int nro_sala = pedir_sala(info_salas, cant_salas);
+    result = m_asientos_sala(m_id, nro_sala, asientos_habilitados, &cant_asientos);
+    if (result != 0) {
+        CLI_PRINTF("ERROR: no se pudo obtener la info de las sala elegida");
+    }
+    mostrar_asientos(asientos_habilitados);
+    /* ELEGIR ASIENTOS DENTRO DE LA SALA ELEGIDA */
+
+    int asientos_elegidos[MAX_ASIENTOS_RESERVADOS];
+    int cant_elegidos = pedir_asientos(asientos_habilitados, cant_asientos, asientos_elegidos);
+    int asientos_reservados[MAX_ASIENTOS_RESERVADOS];
+    int cant_reservados;
+    result = m_reservar_asientos(m_id, asientos_elegidos, cant_elegidos, nro_sala, asientos_reservados,
+                                 &cant_reservados);
+    if (result != 0) {
+        CLI_PRINTF("ERROR: no se pudo reservar los asientos");
+    }
+    printf("\nSe reservaron %i/%i asientos: ", cant_reservados, cant_elegidos);
+    mostrar_asientos_reservados(asientos_elegidos, cant_elegidos, asientos_reservados, cant_reservados);
+
+    /* CONFIRMAR LA RESERVA */
+
+    bool confirmacion = pedir_confirmacion_reserva();
+    if (!confirmacion) {
+        printf("\nReserva cancelada. Gracias por operar con red SARASA\n");
         liberarYSalir();
     }
-    CLI_PRINTF("Canal de comunicacion entre cliente y cine creado");
-
-    sharedMem = sh_mem_create(cli_id);
-    if (sharedMem == NULL) {
-        CLI_PRINTF("Error al crear memoria compartida entre cliente y cliente_asyn: %s", strerror(errno));
-        liberarYSalir();
-    }
-    CLI_PRINTF("Memoria compartida entre cliente y cliente_asyn creada");
-
-	if ((pid_asyn = fork()) == 0) {
-		char cli_id_str[16];
-		sprintf(cli_id_str, "%d", cli_id);
-        execl("./cliente_asyn", "cliente_asyn", cli_id_str, NULL);
-		CLI_PRINTF("Error en el execl del cliente asincronico");
-		exit(1);
-	}
-	CLI_PRINTF("Cliente asincronico iniciado (pid=%d)", pid_asyn);
-
-
-    /******** LOGIN ********/
-
-    login();
-
-    /***** RECIBIR INFO SALAS *****/
-
-    msg = recibir_info_salas();
-    printf("\nCantidad de salas: %i\n", msg.op.info_salas.cant_salas);
-    for (int i = 0; i < msg.op.info_salas.cant_salas; i++) {
-        printf("SALA %i -> %i\n", i + 1, msg.op.info_salas.asientos_por_sala[i]);
+    int precio;
+    result = m_confirmar_reserva(m_id, confirmacion, &precio);
+    if (result != 0) {
+        CLI_PRINTF("ERROR: no se pudo confirmar la reserva");
     }
 
-    /******* ELEGIR SALA ********/
+    /* PAGAR */
 
-    int sala;
-    bool salaElegida = false;
-    do {
-        printf("\nElija sala: ");
-        char sala_str[12];
-        fgets(sala_str, 12, stdin);
-        if(strcmp(sala_str, "\n") == 0) {
-        	continue;
+    printf("\nSu total a abonar es: $%d\n", precio);
+
+    printf("\nPresione enter para enviar el pago...");
+
+    getchar();
+
+    printf("Esperando respuesta de pago...\n");
+
+    result = m_pagar(m_id);
+    if (result != 0) {
+        CLI_PRINTF("ERROR: no se pudo confirmar la reserva");
+    }
+    printf("\nPago aceptado. Gracias por operar con red SARASA\n");
+    liberarYSalir();
+}
+
+void mostrar_asientos_reservados(int asientos_elegidos[MAX_ASIENTOS_RESERVADOS], int cant_elegidos,
+                                 int asientos_reservados[MAX_ASIENTOS_RESERVADOS], int cant_reservados) {
+    printf("\nSe reservaron %i/%i asientos: ", cant_reservados, cant_elegidos);
+    for (int i = 0; i < MAX_ASIENTOS_RESERVADOS; i++) {
+        if (asientos_reservados[i]) {
+            printf(" %i", asientos_elegidos[i]);
         }
-        strtok(sala_str, "\n");
-        sala = atoi(sala_str) - 1;
-        if (sala < 0 || sala >= msg.op.info_salas.cant_salas) {
-            printf("Nro de sala invalida!\n");
-        } else if (msg.op.info_salas.asientos_por_sala[sala] <= 0) {
-            printf("Sala llena!\n");
-        } else {
-            salaElegida = true;
-        }
-    } while (!salaElegida);
-
-    enviar_elegir_sala(sala);
-
-    /******* RECIBIR INFO SALA *********/
-
-    msg = recibir_info_sala();
-    printf("\nHay %i asientos en total en la sala\n", msg.op.info_asientos.cant_asientos);
-    for (int j = 0; j < MAX_ASIENTOS; j++) {
-        printf("%c", msg.op.info_asientos.asiento_habilitado[j] == DISPONIBLE ? 'O' : 'X');
     }
     printf("\n");
+}
 
-    /******* ELEGIR ASIENTOS *********/
-
-    int asiento_habilitado[MAX_ASIENTOS], asientosEnSala = msg.op.info_asientos.cant_asientos;
-    memcpy(asiento_habilitado, msg.op.info_asientos.asiento_habilitado, MAX_ASIENTOS * sizeof(int));
-
-    printf("ENTER para elegir asientos (a partir de ahora no se actualizaran los asientos de la sala)");
-    char dummy[12];
-    fgets(dummy, 12, stdin);
-
-    shmem_data sharedData;
-    sh_mem_read(sharedMem, &sharedData);
-    if (sharedData.dirty) {
-        memcpy(asiento_habilitado, sharedData.asientos, MAX_ASIENTOS * sizeof(int));
-        asientosEnSala = sharedData.cantidad;
-        printf("\nATENCION! Ahora hay %i asientos en total en la sala\n", asientosEnSala);
-        for (int j = 0; j < MAX_ASIENTOS; j++) {
-            printf("%c", asiento_habilitado[j] == DISPONIBLE ? 'O' : 'X');
-        }
-        printf("\n");
-    }
-
-    int asientos_elegidos[MAX_ASIENTOS_RESERVADOS], asiento, cantAsientos = 0;
+int pedir_asientos(int asientos_habilitados[MAX_ASIENTOS], int cant_asientos,
+                   int asientos_elegidos[MAX_ASIENTOS_RESERVADOS]) {
+    int asiento, cant_elegidos = 0;
     memset(asientos_elegidos, 0, MAX_ASIENTOS_RESERVADOS * sizeof(int));
 
     bool finEleccionAsientos = false;
@@ -310,88 +178,81 @@ int main() {
         printf("\nElija un asiento (-1 para finalizar eleccion)(el primer asiento es 0): ");
         char asiento_str[12];
         fgets(asiento_str, 12, stdin);
-        if(strcmp(asiento_str, "\n") == 0) {
-        	continue;
+        if (strcmp(asiento_str, "\n") == 0) {
+            continue;
         }
         strtok(asiento_str, "\n");
         asiento = atoi(asiento_str);
         if (asiento == -1) {
-            if (cantAsientos > 0) {
+            if (cant_elegidos > 0) {
                 finEleccionAsientos = true;
             } else {
                 printf("Debe elegir al menos un asiento!\n");
             }
-        } else if (asiento >= 0 && asiento < asientosEnSala) {
-        	if(asiento_habilitado[asiento] == DISPONIBLE) {
-        		asientos_elegidos[cantAsientos++] = asiento;
-        		asiento_habilitado[asiento] = RESERVADO;
-        		printf("Asiento %i agregado\n", asiento);
-        		if (cantAsientos == MAX_ASIENTOS_RESERVADOS) {
-        			finEleccionAsientos = true;
-        		}
-        	}
-        	else {
-        		printf("Asiento no disponible\n");
-        	}
+        } else if (asiento >= 0 && asiento < cant_asientos) {
+            if (asientos_habilitados[asiento] == DISPONIBLE) {
+                asientos_elegidos[cant_elegidos++] = asiento;
+                asientos_habilitados[asiento] = RESERVADO;
+                printf("Asiento %i agregado\n", asiento);
+                if (cant_elegidos == MAX_ASIENTOS_RESERVADOS) {
+                    finEleccionAsientos = true;
+                }
+            } else {
+                printf("Asiento no disponible\n");
+            }
         } else {
             printf("Nro de asiento invalido!\n");
         }
     } while (!finEleccionAsientos);
+    return cant_elegidos;
+}
 
-    elegir_asientos(asientos_elegidos, cantAsientos, sala);
-
-    /******* RECIBIR INFO RESERVA *********/
-
-    msg = recibir_info_reserva();
-    printf("\nSe reservaron %i/%i asientos: ", msg.op.info_reserva.cant_reservados, cantAsientos);
-    for (int i = 0; i < MAX_ASIENTOS_RESERVADOS; i++) {
-        if (msg.op.info_reserva.asientos_reservados[i]) {
-            printf(" %i", asientos_elegidos[i]);
-        }
-    }
-    printf("\n");
-
-    /******* CONFIRMAR RESERVA *********/
-
+bool pedir_confirmacion_reserva() {
     bool aceptarReserva = false;
-    while(1) {
-    	fflush(stdin);
+    while (true) {
+        fflush(stdin);
         printf("\nDesea confirmar la reserva [S/N]? ");
         char c[12];
         fgets(c, 12, stdin); // Por si el cliente escribe cosas de mas
-        if(c[0] == 'S' || c[0] == 's') {
-        	aceptarReserva = true;
-        	break;
-        }
-        else if(c[0] == 'N' || c[0] == 'n') {
-        	break;
+        if (c[0] == 'S' || c[0] == 's') {
+            aceptarReserva = true;
+            break;
+        } else if (c[0] == 'N' || c[0] == 'n') {
+            break;
         }
         printf("Respuesta invalida!\n");
     }
+    return aceptarReserva;
+}
 
-    confirmar_reserva(aceptarReserva);
-
-    if(!aceptarReserva) {
-    	printf("\nReserva cancelada. Gracias por operar con red SARASA\n");
-    	liberarYSalir();
+void mostrar_info_salas(int asientos_por_sala[MAX_SALAS], int cant_salas) {
+    printf("\nCantidad de salas: %i\n", cant_salas);
+    for (int i = 0; i < cant_salas; i++) {
+        printf("SALA %i -> %i\n", i + 1, asientos_por_sala[i]);
     }
+}
 
-    /******* RECIBIR INFO PAGO *********/
 
-    msg = recibir_info_pago();
-    printf("\nSu total a abonar es: $%d\n", msg.op.info_pago.precio);
+int pedir_sala(int asientos_por_sala[MAX_SALAS], int cant_salas) {
 
-    /******* CONFIRMAR RESERVA *********/
-    printf("\nPresione enter para enviar el pago...");
-    getchar();
-    pagar(msg.op.info_pago.precio);
-
-    /******* RECIBIR PAGO ACEPTADO *********/
-    printf("Esperando respuesta de pago...\n");
-    recibir_pago_ok();
-    printf("\nPago aceptado. Gracias por operar con red SARASA\n");
-
-    liberarYSalir();
-
-    return 0;
+    int nro_sala;
+    bool salaElegida = false;
+    do {
+        printf("\nElija sala: ");
+        char sala_str[12];
+        fgets(sala_str, 12, stdin);
+        if (strcmp(sala_str, "\n") == 0) {
+            continue;
+        }
+        strtok(sala_str, "\n");
+        nro_sala = atoi(sala_str) - 1;
+        if (nro_sala < 0 || nro_sala >= cant_salas) {
+            printf("Nro de sala invalida!\n");
+        } else if (asientos_por_sala[nro_sala] <= 0) {
+            printf("Sala llena!\n");
+        } else {
+            salaElegida = true;
+        }
+    } while (!salaElegida);
+    return nro_sala;
 }

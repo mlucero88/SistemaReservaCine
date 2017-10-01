@@ -4,6 +4,7 @@
 #include "entidad.h"
 #include "operaciones.h"
 #include "ipc/msg_queue.h"
+
 /* Abstraccion de un canal de comunicacion. En principio se implementa usando una msg_quue de ida y una msg_queue de vuelta */
 
 struct canal;
