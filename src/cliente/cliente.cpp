@@ -1,16 +1,11 @@
-
 #include <cstring>
 #include <cstdlib>
 #include <csignal>
 
-#include "../common/canal.h"
-#include "../common/color_print.h"
 #include "interfaz.h"
+#include "../common/color_print.h"
 
-#define CLI_LOG cli_log
-#define CLI_PRINTF(fmt, ...) FPRINTF(CLI_LOG, BLUE, fmt, ##__VA_ARGS__)
-
-FILE *cli_log = nullptr;
+#define CLI_LOG(fmt, ...) FPRINTF(stdout, KMAG, fmt, ##__VA_ARGS__)
 
 bool pedir_confirmacion_reserva();
 
@@ -26,108 +21,98 @@ void mostrar_asientos_reservados(int asientos_elegidos[MAX_ASIENTOS_RESERVADOS],
 
 void mostrar_asientos(int asientos[MAX_ASIENTOS]);
 
-void liberarYSalir() {
-    CLI_PRINTF("Preparando para salir...");
-    CLI_PRINTF("*** Aplicacion cerrada ***");
-    fclose(cli_log);
-    exit(1);
+void liberar_y_salir() {
+	exit(1);
 }
 
 void sighandler(int signum) {
     if (signum == SIGINT) {
-        liberarYSalir();
+    	liberar_y_salir();
     }
 }
 
-int main() {
-    int cli_id = getpid();
-    printf("PID: %i\n", cli_id);
-    char logName[64];
-    sprintf(logName, "../logs/cli_%i" ".log", cli_id);
-    cli_log = fopen(logName, "w");
-    signal(SIGINT, sighandler);
+int main(int argc, char* argv[]) {
+	pid_t cli_id = getpid();
 
     struct sigaction sigchld;
     sigchld.sa_handler = SIG_DFL;
     sigchld.sa_flags = SA_NOCLDWAIT;
     sigemptyset(&sigchld.sa_mask);
     sigaction(SIGCHLD, &sigchld, NULL);
+    signal(SIGINT, sighandler);
 
-    CLI_PRINTF("*** Aplicacion iniciada ***");
+    CLI_LOG("PID: %i\n\n", cli_id);
 
     /* INICIALIZAR */
-
     m_id mom_id = m_init();
-    int result;
+    if(m_errno != RET_OK) {
+    	CLI_LOG("Error en la inicializacion: %s\n", m_str_error(m_errno));
+    	liberar_y_salir();
+    }
 
     /* LOGIN */
-
-    result = m_login(mom_id, cli_id);
-    if (result != 0) {
-        CLI_PRINTF("ERROR: no se pudo hacer LOGIN");
+    m_login(mom_id, cli_id);
+    if(m_errno != RET_OK) {
+    	CLI_LOG("Error en el login: %s\n", m_str_error(m_errno));
+    	liberar_y_salir();
     }
 
     /* INFO GENERAL DE LAS SALAS */
     int info_salas[MAX_SALAS];
-    int cant_salas;
-    result = m_info_salas(mom_id, info_salas, &cant_salas);
-    if (result != RET_OK) {
-        CLI_PRINTF("ERROR: no se pudo obtener la info de las salas");
+    int cant_salas = m_info_salas(mom_id, info_salas);
+    if(m_errno != RET_OK) {
+    	CLI_LOG("Error al obtener informacion de las salas: %s\n", m_str_error(m_errno));
+    	liberar_y_salir();
     }
     mostrar_info_salas(info_salas, cant_salas);
 
     /* ELEGIR UNA SALA */
     int asientos_habilitados[MAX_ASIENTOS];
-    int cant_asientos;
     int nro_sala = pedir_sala(info_salas, cant_salas);
-    result = m_asientos_sala(mom_id, nro_sala, asientos_habilitados, &cant_asientos);
-    if (result != RET_OK) {
-        CLI_PRINTF("ERROR: no se pudo obtener la info de las sala elegida");
+    int cant_asientos = m_asientos_sala(mom_id, nro_sala, asientos_habilitados);
+    if(m_errno != RET_OK) {
+    	CLI_LOG("Error al obtener informacion de los asientos: %s\n", m_str_error(m_errno));
+    	liberar_y_salir();
     }
     mostrar_asientos(asientos_habilitados);
-    /* ELEGIR ASIENTOS DENTRO DE LA SALA ELEGIDA */
 
+    /* ELEGIR ASIENTOS DENTRO DE LA SALA ELEGIDA */
     int asientos_elegidos[MAX_ASIENTOS_RESERVADOS];
     int cant_elegidos = pedir_asientos(asientos_habilitados, cant_asientos, asientos_elegidos);
     int asientos_reservados[MAX_ASIENTOS_RESERVADOS];
-    int cant_reservados;
-    result = m_reservar_asientos(mom_id, asientos_elegidos, cant_elegidos, nro_sala, asientos_reservados,
-                                 &cant_reservados);
-    if (result != RET_OK) {
-        CLI_PRINTF("ERROR: no se pudo reservar los asientos");
+    int cant_reservados = m_reservar_asientos(mom_id, asientos_elegidos, cant_elegidos, nro_sala, asientos_reservados);
+    if(m_errno != RET_OK) {
+    	CLI_LOG("Error al reservar los asientos: %s\n", m_str_error(m_errno));
+    	liberar_y_salir();
     }
     printf("\nSe reservaron %i/%i asientos: ", cant_reservados, cant_elegidos);
     mostrar_asientos_reservados(asientos_elegidos, cant_elegidos, asientos_reservados, cant_reservados);
 
     /* CONFIRMAR LA RESERVA */
-
     bool confirmacion = pedir_confirmacion_reserva();
+    int precio = m_confirmar_reserva(mom_id, confirmacion);
+    if(m_errno != RET_OK) {
+    	CLI_LOG("Error al confirmar la reserva: %s\n", m_str_error(m_errno));
+    	liberar_y_salir();
+    }
     if (!confirmacion) {
         printf("\nReserva cancelada. Gracias por operar con red SARASA\n");
-        liberarYSalir();
-    }
-    int precio;
-    result = m_confirmar_reserva(mom_id, confirmacion, &precio);
-    if (result != RET_OK) {
-        CLI_PRINTF("ERROR: no se pudo confirmar la reserva");
+        liberar_y_salir();
     }
 
     /* PAGAR */
-
     printf("\nSu total a abonar es: $%d\n", precio);
-
     printf("\nPresione enter para enviar el pago...");
-
     getchar();
-
     printf("Esperando respuesta de pago...\n");
-
-    result = m_pagar(mom_id, precio);
-    if (result != RET_OK) {
-        CLI_PRINTF("ERROR: no se pudo confirmar la reserva");
+    m_pagar(mom_id, precio);
+    if(m_errno != RET_OK) {
+    	CLI_LOG("Error al pagar la reserva: %s\n", m_str_error(m_errno));
+    	liberar_y_salir();
     }
+
     printf("\nPago aceptado. Gracias por operar con red SARASA\n");
-    liberarYSalir();
+    liberar_y_salir();
 }
 
 void mostrar_asientos_reservados(int asientos_elegidos[MAX_ASIENTOS_RESERVADOS], int cant_elegidos,

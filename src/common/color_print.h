@@ -4,17 +4,10 @@
 #include <cstdio>
 #include <unistd.h>
 
+#include "colors.h"
 #include "constantes.h"
 
-#define RED     "\x1b[31m"
-#define GREEN   "\x1b[32m"
-#define YELLOW  "\x1b[33m"
-#define BLUE    "\x1b[34m"
-#define MAGENTA "\x1b[35m"
-#define CYAN    "\x1b[36m"
-#define RESET   "\x1b[0m"
-
-#define FPRINTF(file, color, fmt, ...) fprintf(file, color "[%i] " fmt RESET "\n", getpid(), ##__VA_ARGS__); fflush(file)
+#define FPRINTF(file, color, fmt, ...) fprintf(file, color fmt KNRM, ##__VA_ARGS__); fflush(file)
 
 static inline const char *strOpType(int opType) {
     switch (opType) {
