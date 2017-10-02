@@ -1,13 +1,45 @@
-int main(int argc, char* argv[]) {
-    // proc -> el proceso que esta en el medio, entre mom cliente y mom cine
-    // CREO QUE NO HACE NADA MÁS ESTE PROCESO ES UN PASAMANOS...
-//    canal *canal_cli_mom = canal_crear(mom, proc);
-//    canal *canal_mom_proc = canal_crear(mom, proc);
-//    while (true) {
-//        mensaje_t msg;
-//        canal_recibir(canal_cli_mom, msg, 0); // RECIBE MJE DEL CLIENTE
-//        canal_enviar(canal_mom_proc, msg); // LO MANDA AL PROC QUE A SU VEZ LO MANDA AL SERVER
-//        canal_recibir(canal_mom_proc, msg, 0); // RECIBE LA RTA
-//        canal_enviar(canal_cli_mom, msg); // MANDA LA RTA AL CLIENTE
-//    }
+#include <csignal>
+#include <cstdlib>
+#include <unistd.h>
+
+#include "../common/color_print.h"
+#include "../common/ipc/msg_queue.h"
+
+#define MOM_LOG(fmt, ...) FPRINTF(stdout, KWHT, fmt, ##__VA_ARGS__)
+
+volatile bool quit = false;
+
+void salir() {
+	MOM_LOG("Proceso finalizado\n");
+	exit(0);
+}
+
+void handler(int signal) {
+	quit = true;
+}
+
+int main(int argc, char *argv[]) {
+	signal(SIGINT, handler);
+
+	int q_cli_snd = msg_queue_get(Q_MOM_CLI);
+	int q_cli_rcv = msg_queue_get(Q_CLI_MOM);
+
+	int q_cine_snd = msg_queue_get(Q_CLI_CINE);
+	int q_cine_rcv = msg_queue_get(Q_CINE_CLI);
+
+	if (q_cli_snd == -1 || q_cli_rcv == -1) {
+		MOM_LOG("Error al crear canal de comunicacion entre mom y cliente\n");
+		salir();
+	}
+	if (q_cine_snd == -1 || q_cine_rcv == -1) {
+		MOM_LOG("Error al crear canal de comunicacion entre cliente y cine\n");
+		salir();
+	}
+
+	mensaje_t msg;
+	while (!quit) {
+		msg_queue_receive(q_cli_rcv, 0, &msg) && msg_queue_send(q_cine_snd, &msg) && msg_queue_receive(q_cine_rcv, 0, &msg) && msg_queue_send(q_cli_snd, &msg);
+	}
+
+	salir();
 }

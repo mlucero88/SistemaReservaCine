@@ -3,58 +3,56 @@
 
 #include "constantes.h"
 
-typedef union {
+struct op_login_t {
+	int cli_id;
+};
 
-    struct {
-        int cli_id;
-    } login;
+struct op_info_salas_t {
+	int asientos_por_sala[MAX_SALAS];
+	int cant_salas;
+};
 
-    struct {
-        int asientos_por_sala[MAX_SALAS];
-        int cant_salas;
-    } info_salas;
+struct op_elegir_sala_t {
+	int nro_sala;
+};
 
-    struct {
-        int nro_sala;
-    } elegir_sala;
+struct op_info_asientos_t {
+	int asiento_habilitado[MAX_ASIENTOS];
+	int cant_asientos;
+	int nro_sala;
+};
 
-    struct {
-        int asiento_habilitado[MAX_ASIENTOS];
-        int cant_asientos;
-        int nro_sala;
-    } info_asientos;
+struct op_elegir_asientos_t {
+	int asientos_elegidos[MAX_ASIENTOS_RESERVADOS];
+	int cant_elegidos;
+	int nro_sala;
+};
 
-    struct {
-        int asientos_elegidos[MAX_ASIENTOS_RESERVADOS];
-        int cant_elegidos;
-        int nro_sala;  // Por ahora, mando el numero de sala otra vez.
-    } elegir_asientos;
+/* Puede no ser la misma cantidad que los elegidos */
+struct op_info_reserva_t {
+	int asientos_reservados[MAX_ASIENTOS_RESERVADOS];
+	int cant_reservados;
+};
 
-    struct {
-        int asientos_reservados[MAX_ASIENTOS_RESERVADOS];
-        int cant_reservados;
-    } info_reserva; /* Puede no ser la misma cantidad que los elegidos */
+struct op_confirmar_reserva_t {
+	bool reserva_confirmada;
+};
 
-    struct {
-        bool reserva_confirmada;
-    } confirmar_reserva; /* Cliente acepta o no los asientos reservados */
+struct op_info_pago_t {
+	unsigned short precio;
+};
 
-    struct {
-        unsigned short precio;
-    } info_pago;
+struct op_pagar_t {
+	unsigned short pago;
+};
 
-    struct {
-        unsigned short pago;
-    } pagar;
+struct op_pago_ok_t {
+	unsigned short pago_ok;
+};
 
-    struct {
-        unsigned short pago_ok;
-    } pago_ok;
-    struct {
-        int cli_id;
-        int n_sala;
-    } timeout;
-
-} operacion_t;
+struct op_timeout_t {
+	int cli_id;
+	int n_sala;
+};
 
 #endif /* COMMON_OPERACIONES_H_ */

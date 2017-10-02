@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
     }
 
     /* LOGIN */
-    m_login(mom_id, cli_id);
+    m_login(mom_id);
     if(m_errno != RET_OK) {
     	CLI_LOG("Error en el login: %s\n", m_str_error(m_errno));
     	liberar_y_salir();
