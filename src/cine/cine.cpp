@@ -1,6 +1,7 @@
 #include <csignal>
 #include <cstdlib>
 #include <unistd.h>
+#include <sys/ipc.h>
 
 #include "../common/color_print.h"
 #include "../common/ipc/msg_queue.h"
@@ -23,7 +24,7 @@ void salir() {
 
 void alarm_handler(int signal) {
 	CINE_LOG("Session time expired for client %i\n", cli_id);
-	mensaje_t msg;
+	mensaje_t msg, dummyMsg;
 	msg.mtype = cli_id;
 	msg.tipo = TIMEOUT;
 	msg.op.timeout.cli_id = cli_id;
@@ -31,7 +32,8 @@ void alarm_handler(int signal) {
 
 	msg_queue_send(q_cli_snd, &msg);
 
-	// todo Acá se podría poner un msgrcv que NO BLOQUEE, para que saque algun mensaje que el cliente pueda haber mandado. Y si no hay nada, no se bloquea
+	/* rcv no bloqueante para sacar algun mensaje q el cliente pudo haber mandado */
+	msg_queue_receive(q_cli_rcv, cli_id, &dummyMsg, IPC_NOWAIT);
 
 	msg_queue_send(q_admin_snd, &msg);
 

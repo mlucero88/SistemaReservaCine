@@ -1,7 +1,6 @@
 #ifndef COMMON_IPC_MSG_QUEUE_H_
 #define COMMON_IPC_MSG_QUEUE_H_
 
-
 #include "../operaciones.h"
 
 typedef enum {
@@ -26,6 +25,6 @@ int msg_queue_get(msg_queue_direction n);
 
 bool msg_queue_send(int q_id, const mensaje_t *mensaje);
 
-bool msg_queue_receive(int q_id, long msg_type, mensaje_t *mensaje);
+bool msg_queue_receive(int q_id, long msg_type, mensaje_t *mensaje, int flags = 0);
 
 #endif /* COMMON_IPC_MSG_QUEUE_H_ */

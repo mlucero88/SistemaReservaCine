@@ -21,6 +21,6 @@ bool msg_queue_send(int q_id, const mensaje_t *mensaje) {
     return (msgsnd(q_id, static_cast<const void *>(mensaje), sizeof(mensaje_t) - sizeof(long), 0) == 0);
 }
 
-bool msg_queue_receive(int q_id, long msg_type, mensaje_t *mensaje) {
-    return (msgrcv(q_id, static_cast<void *>(mensaje), sizeof(mensaje_t) - sizeof(long), msg_type, 0) >= 0);
+bool msg_queue_receive(int q_id, long msg_type, mensaje_t *mensaje, int flags) {
+    return (msgrcv(q_id, static_cast<void *>(mensaje), sizeof(mensaje_t) - sizeof(long), msg_type, flags) >= 0);
 }
