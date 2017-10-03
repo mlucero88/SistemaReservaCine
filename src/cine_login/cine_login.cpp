@@ -32,7 +32,6 @@ int main(int argc, char* argv[]) {
         msg.tipo = LOGIN;
 
         CINE_LOG("Esperando mensaje de login...\n");
-        CINE_LOG("cola %i\n", q_cli_rcv);
         if (msg_queue_receive(q_cli_rcv, LOGIN_MSG_TYPE, &msg)) {
             CINE_LOG("Recibido LOGIN\n");
         	// Creo el proceso que se va a comunicar con este cliente

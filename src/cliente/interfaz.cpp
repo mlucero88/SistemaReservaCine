@@ -26,7 +26,6 @@ static int q_mom_rcv;
 
 
 int enviar_msj(mensaje_t &msg) {
-    INT_PRINTF("cola %i\n", q_mom_snd);
 	return msg_queue_send(q_mom_snd, &msg) ? RET_OK : ERR_MSGSEND;
 }
 

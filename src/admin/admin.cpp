@@ -9,37 +9,15 @@
 #define ADMIN_LOG(fmt, ...) FPRINTF(stdout, KGRN, fmt, ##__VA_ARGS__)
 
 void mostrar_asientos(int n_sala, int asientos_salas[MAX_SALAS][MAX_ASIENTOS]) {
-    ADMIN_LOG("MOSTRAR_ASIENTOS\n");
-    for (int i = 0; i < MAX_SALAS; i++) {
-        for (int j = 0; j < MAX_ASIENTOS_RESERVADOS; j++) {
-            ADMIN_LOG("ASIENTO[%i][%i] = %i\n", i, j, asientos_salas[i][j]);
-
-        }
-    }
     //ADMIN_LOG("\nHay %i asientos en total en la sala\n", n_sala + 1);
     ADMIN_LOG("En la sala %i los asientos son: \n", n_sala);
     for (int j = 0; j < MAX_ASIENTOS; j++) {
     	ADMIN_LOG("%c\n", asientos_salas[n_sala][j] == DISPONIBLE ? 'O' : 'X');
     }
-
-    ADMIN_LOG("\n");
-    for (int i = 0; i < MAX_SALAS; i++) {
-        for (int j = 0; j < MAX_ASIENTOS_RESERVADOS; j++) {
-            ADMIN_LOG("ASIENTO[%i][%i] = %i\n", i, j, asientos_salas[i][j]);
-
-        }
-    }
 }
 
 void cancelar_reserva(int reservas[MAX_SALAS][MAX_ASIENTOS], int asientos_salas[MAX_SALAS][MAX_ASIENTOS], int cli_id,
                        int n_sala, int n_asientos_salas[MAX_SALAS]) {
-    ADMIN_LOG("CANCELAR_RESERVA\n");
-    for (int i = 0; i < MAX_SALAS; i++) {
-        for (int j = 0; j < MAX_ASIENTOS_RESERVADOS; j++) {
-            ADMIN_LOG("ASIENTO[%i][%i] = %i\n", i, j, asientos_salas[i][j]);
-
-        }
-    }
 	ADMIN_LOG("Cancelando la reserva del cliente %i\n", cli_id);
     for (int i = 0; i < MAX_ASIENTOS; ++i) {
         if (reservas[n_sala][i] == cli_id) {
@@ -48,24 +26,11 @@ void cancelar_reserva(int reservas[MAX_SALAS][MAX_ASIENTOS], int asientos_salas[
             n_asientos_salas[n_sala]++;
         }
     }
-    for (int i = 0; i < MAX_SALAS; i++) {
-        for (int j = 0; j < MAX_ASIENTOS_RESERVADOS; j++) {
-            ADMIN_LOG("ASIENTO[%i][%i] = %i\n", i, j, asientos_salas[i][j]);
-
-        }
-    }
 }
 
 void notificar_clientes(int q_admin_cliente, int nro_sala, int asientos_salas[MAX_SALAS][MAX_ASIENTOS],
                         int n_asientos_salas[MAX_SALAS], int salas_clientes[MAX_SALAS][MAX_CLIENTES]) {
     // Si se pudo reservar/liberar alguno de los asientos, les aviso a los clientes que estaban mirando esa sala
-    ADMIN_LOG("NOTIFICAR_CLIENTES\n");
-    for (int i = 0; i < MAX_SALAS; i++) {
-        for (int j = 0; j < MAX_ASIENTOS_RESERVADOS; j++) {
-            ADMIN_LOG("ASIENTO[%i][%i] = %i\n", i, j, asientos_salas[i][j]);
-
-        }
-    }
     mensaje_t msg;
     msg.tipo = INFORMAR_ASIENTOS;
     msg.op.info_asientos.nro_sala = nro_sala;
@@ -78,12 +43,6 @@ void notificar_clientes(int q_admin_cliente, int nro_sala, int asientos_salas[MA
             // 0 si no hay cliente en esa posicion, si no, es el pid del cliente, != 0
             msg.mtype = salas_clientes[nro_sala][i];
             msg_queue_send(q_admin_cliente, &msg);
-        }
-    }
-    for (int i = 0; i < MAX_SALAS; i++) {
-        for (int j = 0; j < MAX_ASIENTOS_RESERVADOS; j++) {
-            ADMIN_LOG("ASIENTO[%i][%i] = %i\n", i, j, asientos_salas[i][j]);
-
         }
     }
 }
@@ -115,12 +74,6 @@ void cargar_datos(int n_salas, int n_asientos_salas[MAX_SALAS], int asientos_sal
         n_asientos_salas[i] = 0;
         for (int j = 0; j < MAX_ASIENTOS; j++) {
             asientos_salas[i][j] = NO_DISPONIBLE;
-        }
-    }
-    for (int i = 0; i < MAX_SALAS; i++) {
-        for (int j = 0; j < MAX_ASIENTOS_RESERVADOS; j++) {
-            ADMIN_LOG("ASIENTO[%i][%i] = %i\n", i, j, asientos_salas[i][j]);
-
         }
     }
 }
@@ -208,17 +161,6 @@ int main(int argc, char *argv[]) {
     		}
 
     		case ELEGIR_ASIENTOS: {
-                ADMIN_LOG("ASIENTOS ELEGIDOS\n");
-                for (int i = 0; i < MAX_ASIENTOS_RESERVADOS; i++) {
-                    ADMIN_LOG("%i\n", msg.op.elegir_asientos.asientos_elegidos[i]);
-                }
-                ADMIN_LOG("ELEGIR_ASIENTOS\n");
-                for (int i = 0; i < MAX_SALAS; i++) {
-                    for (int j = 0; j < MAX_ASIENTOS_RESERVADOS; j++) {
-                        ADMIN_LOG("ASIENTO[%i][%i] = %i\n", i, j, asientos_salas[i][j]);
-
-                    }
-                }
     			ADMIN_LOG("INFORMAR_RESERVA para cliente %i\n", cli_id);
     		    mensaje_t respuesta;
     		    respuesta.tipo = INFORMAR_RESERVA;
@@ -232,17 +174,14 @@ int main(int argc, char *argv[]) {
     		    ADMIN_LOG("Veo si se pueden reservar %i asientos en la sala %i\n", nro_asientos_pedidos, nro_sala + 1);
     		    for (int i = 0; i < nro_asientos_pedidos; i++) {
     		        int nro_asiento = msg.op.elegir_asientos.asientos_elegidos[i];
-                    ADMIN_LOG("NRO ASIENTOS PEDIDOS %i, ASIENTO %i\n", nro_asientos_pedidos, nro_asiento);
     		        if (asientos_salas[nro_sala][nro_asiento] == DISPONIBLE) {
     		        	respuesta.op.info_reserva.asientos_reservados[i] = 1;
     		            asientos_salas[nro_sala][nro_asiento] = RESERVADO;
-                        ADMIN_LOG("Asientos[%i][%i] RESERVADO\n", nro_sala, nro_asiento);
     		            reservas[nro_sala][nro_asiento] = cli_id;
     		            asientos_reservados++;
-    		            ADMIN_LOG("Un asiento reservado: %i para el cliente %i\n", nro_asiento, cli_id);
+                        ADMIN_LOG("Asiento %i reservado para el cliente %i\n", nro_asiento, cli_id);
                     } else {
-                        ADMIN_LOG("NO SE PUDO RESERVAR Asientos[%i][%i] = %i \n", nro_sala, nro_asiento,
-                                  asientos_salas[nro_sala][nro_asiento]);
+                        ADMIN_LOG("NO SE PUDO RESERVAR asiento %i \n", asientos_salas[nro_sala][nro_asiento]);
                     }
     		    }
     			ADMIN_LOG("Se reservaron %i asientos para el cliente %i\n", asientos_reservados, cli_id);
@@ -255,25 +194,10 @@ int main(int argc, char *argv[]) {
     			if (asientos_reservados > 0) {
     				notificar_clientes(q_cliente_snd, nro_sala, asientos_salas, n_asientos_salas, salas_clientes);
     			}
-
-                for (int i = 0; i < MAX_SALAS; i++) {
-                    for (int j = 0; j < MAX_ASIENTOS_RESERVADOS; j++) {
-                        ADMIN_LOG("ASIENTO[%i][%i] = %i\n", i, j, asientos_salas[i][j]);
-
-                    }
-                }
-
     			break;
     		}
 
     		case CONFIRMAR_RESERVA: {
-                ADMIN_LOG("CONFIRMAR_RESERVA\n");
-                for (int i = 0; i < MAX_SALAS; i++) {
-                    for (int j = 0; j < MAX_ASIENTOS_RESERVADOS; j++) {
-                        ADMIN_LOG("ASIENTO[%i][%i] = %i\n", i, j, asientos_salas[i][j]);
-
-                    }
-                }
     			if(msg.op.confirmar_reserva.reserva_confirmada) {
     				ADMIN_LOG("Reserva confirmada por cliente %i\n", cli_id);
 
@@ -286,12 +210,6 @@ int main(int argc, char *argv[]) {
     				ADMIN_LOG("Reserva cancelada por cliente %i\n", cli_id);
         			quitar_cliente_sistema(cli_id, salas_clientes);
     			}
-                for (int i = 0; i < MAX_SALAS; i++) {
-                    for (int j = 0; j < MAX_ASIENTOS_RESERVADOS; j++) {
-                        ADMIN_LOG("ASIENTO[%i][%i] = %i\n", i, j, asientos_salas[i][j]);
-
-                    }
-                }
     			break;
     		}
 
@@ -309,24 +227,12 @@ int main(int argc, char *argv[]) {
     			// Cancelo la reserva que había hecho el cliente, si es que había alguna y le aviso a los demás clientes
     			// todo: no hay q sacar aca tb al cliente de la sala (salas_clientes)?
                 ADMIN_LOG("TIMEOUT\n");
-                for (int i = 0; i < MAX_SALAS; i++) {
-                    for (int j = 0; j < MAX_ASIENTOS_RESERVADOS; j++) {
-                        ADMIN_LOG("ASIENTO[%i][%i] = %i\n", i, j, asientos_salas[i][j]);
-
-                    }
-                }
     			int cliente = msg.op.timeout.cli_id;
     			int n_sala = msg.op.timeout.n_sala;
 
     			cancelar_reserva(reservas, asientos_salas, cliente, n_sala, n_asientos_salas);
     			quitar_cliente_sistema(cliente, salas_clientes, n_sala);
     			notificar_clientes(q_cliente_snd, n_sala, asientos_salas, n_asientos_salas, salas_clientes);
-                for (int i = 0; i < MAX_SALAS; i++) {
-                    for (int j = 0; j < MAX_ASIENTOS_RESERVADOS; j++) {
-                        ADMIN_LOG("ASIENTO[%i][%i] = %i\n", i, j, asientos_salas[i][j]);
-
-                    }
-                }
     			break;
     		}
     		default: {
