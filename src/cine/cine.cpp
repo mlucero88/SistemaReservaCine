@@ -30,12 +30,11 @@ void alarm_handler(int signal) {
 	msg.op.timeout.cli_id = cli_id;
 	msg.op.timeout.n_sala = n_sala;
 
+	msg_queue_send(q_admin_snd, &msg);
 	msg_queue_send(q_cli_snd, &msg);
 
 	/* rcv no bloqueante para sacar algun mensaje q el cliente pudo haber mandado */
 	msg_queue_receive(q_cli_rcv, cli_id, &dummyMsg, IPC_NOWAIT);
-
-	msg_queue_send(q_admin_snd, &msg);
 
 	salir();
 }
@@ -47,15 +46,13 @@ void forward_msg(int tipo) {
 		if (msg.tipo == ELEGIR_SALA) {
 			n_sala = msg.op.elegir_sala.nro_sala;
 		}
-		else if (msg.tipo == CONFIRMAR_RESERVA && !msg.op.confirmar_reserva.reserva_confirmada) {
-			// Se cancelo la reserva. Aviso al admin y finalizo
-			msg_queue_send(q_admin_snd, &msg);
-			salir();
-		}
 		if (msg_queue_send(q_admin_snd, &msg)) {
 			CINE_LOG("Esperando respuesta del admin para %s\n", strOpType(tipo));
 			if (msg_queue_receive(q_admin_rcv, cli_id, &msg)) {
 				if (msg_queue_send(q_cli_snd, &msg)) {
+					if (msg.tipo == RESERVA_CANCELADA) {
+						salir();
+					}
 					return;
 				}
 			}

@@ -36,6 +36,7 @@ struct op_info_reserva_t {
 
 struct op_confirmar_reserva_t {
 	bool reserva_confirmada;
+	int nro_sala;
 };
 
 struct op_info_pago_t {
@@ -47,7 +48,9 @@ struct op_pagar_t {
 };
 
 struct op_pago_ok_t {
-	unsigned short pago_ok;
+};
+
+struct op_reserva_cancelada_t {
 };
 
 struct op_timeout_t {

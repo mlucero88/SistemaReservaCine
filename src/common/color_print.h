@@ -41,6 +41,9 @@ static inline const char *strOpType(int opType) {
         case PAGO_OK: {
             return "PAGO_OK";
         }
+        case RESERVA_CANCELADA: {
+            return "RESERVA_CANCELADA";
+        }
         case TIMEOUT: {
             return "TIMEOUT";
         }

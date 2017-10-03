@@ -16,7 +16,8 @@
 #define INFORMAR_PAGO 8
 #define PAGAR 9
 #define PAGO_OK 10
-#define TIMEOUT 11
+#define RESERVA_CANCELADA 11
+#define TIMEOUT 12
 
 #define NO_DISPONIBLE (-1) // El asiento no existe en la sala
 #define DISPONIBLE 0 // El asiento se puede reservar

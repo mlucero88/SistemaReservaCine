@@ -6,8 +6,14 @@
 #include "../common/color_print.h"
 #include "../common/ipc/msg_queue.h"
 
+//#define DEBUG_
+
+#ifdef DEBUG_
 /* Los logs a causa de error se hacen desde el cliente que consume el api */
-#define INT_PRINTF(fmt, ...) FPRINTF(stdout, KCYN, fmt, ##__VA_ARGS__)
+#define INT_PRINTF(fmt, ...) FPRINTF(stdout, KBLU, fmt, ##__VA_ARGS__)
+#else
+#define INT_PRINTF(fmt, ...)
+#endif
 
 enum CliLastState {
 	INIT, CINE_LOGIN, SELECCION_SALA, SELECCION_ASIENTOS, CONFIRMACION_RESERVA, PAGO, EXPIRADO, CANCELADO
@@ -52,9 +58,7 @@ int recibir_msj(long cli_id, mensaje_t &msg, int tipo) {
 
 m_id m_init() {
     q_mom_snd = msg_queue_get(Q_CLI_MOM);
-    //q_mom_snd = msg_queue_get(Q_CLI_CINE);
     q_mom_rcv = msg_queue_get(Q_MOM_CLI);
-    //q_mom_rcv = msg_queue_get(Q_CINE_CLI);
 
 	if (q_mom_snd == -1 || q_mom_rcv == -1) {
 		m_errno = ERR_QUEUEGET;
@@ -155,16 +159,21 @@ op_info_pago_t m_confirmar_reserva(m_id cli_id, bool aceptar) {
 	int ret;
 	mensaje_t msg = { .mtype = cli_id, .tipo = CONFIRMAR_RESERVA };
 	msg.op.confirmar_reserva.reserva_confirmada = aceptar;
+	msg.op.confirmar_reserva.nro_sala = _sala;
 
 	if((ret = enviar_msj(msg)) == RET_OK) {
-		if(!aceptar) {
-			/* Si cancelo, no espero mensaje de recepcion */
-			cli_state = CANCELADO;
-		}
-		else if((ret = recibir_msj(cli_id, msg, INFORMAR_PAGO)) == RET_OK) {
-			cli_state = CONFIRMACION_RESERVA;
+		int tipo = aceptar ? INFORMAR_PAGO : RESERVA_CANCELADA;
+		if((ret = recibir_msj(cli_id, msg, tipo)) == RET_OK) {
 			m_errno = RET_OK;
-			return msg.op.info_pago;
+
+			if(aceptar) {
+				cli_state = CONFIRMACION_RESERVA;
+				return msg.op.info_pago;
+			}
+			else {
+				cli_state = CANCELADO;
+				return op_info_pago_t {};
+			}
 		}
 	}
 
@@ -172,10 +181,10 @@ op_info_pago_t m_confirmar_reserva(m_id cli_id, bool aceptar) {
 	return op_info_pago_t {};
 }
 
-op_pago_ok_t m_pagar(m_id cli_id, int pago) {
+void m_pagar(m_id cli_id, int pago) {
 	if(cli_state != CONFIRMACION_RESERVA) {
         m_errno = ERR_OPINVALID;
-        return op_pago_ok_t {};
+        return;
 	}
 
 	int ret;
@@ -186,12 +195,11 @@ op_pago_ok_t m_pagar(m_id cli_id, int pago) {
 		if((ret = recibir_msj(cli_id, msg, PAGO_OK)) == RET_OK) {
 			cli_state = PAGO;
 			m_errno = RET_OK;
-			return msg.op.pago_ok;
+			return;
 		}
 	}
 
 	m_errno = ret;
-	return op_pago_ok_t {};
 }
 
 const char* m_str_error(int err) {

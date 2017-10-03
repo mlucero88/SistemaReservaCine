@@ -1,34 +1,30 @@
-**** PREPARACION ****
-$chmod u+x compilar.sh
-$chmod u+x run.sh
-
 **** COMPILACION ****
+$chmod u+x compilar.sh
 $./compilar.sh
 
-**** EJECUCION DE CINE ****
-$./run.sh
-
-**** EJECUCION DE CLIENTE -> Solo ejecutar desde carpeta bin ****
-$cd bin
-$./cliente
-
-Al iniciar el cliente, se informará su pid por consola y se puede revisar su log mediante:
-$tail -f logs/cli_<pid>.log
-
-
-
-Si se desea tener más control sobre el lanzamiento de procesos:
 
 **** ESTABLECER ENTORNO (IPCs) -> Puede ejecutarse desde cualquier ruta ****
 $bin/environment --start
 
-**** LIBERAR ENTORNO (IPCs) -> Puede ejecutarse desde cualquier ruta ****
-$bin/environment --stop
+
+**** EJECUTAR MOM -> Puede ejecutarse desde cualquier ruta ****
+$bin/mom
+
+Para detenerlo, enviarle SIGINT (Ctrl+C)
+
 
 **** EJECUTAR CINE -> Solo ejecutar desde carpeta bin ****
 $cd bin
 $./cine_login
 
+Para detenerlo, enviarle SIGINT (Ctrl+C)
 Se recomienda liberar y establecer el entorno entre cada ejecución de cine_login por si quedan mensajes en la cola al cerrar el cine_login.
 
-IMPORTANTE: Si se desea probar a un cliente que sigue corriendo o se ejecuta sin un cine_login, no utilizar run.sh. Para este caso, establecer el entorno a mano, ya que run.sh libera el entorno al cerrar el cine_login y el cliente no podrá utilizar las colas.
+
+**** EJECUTAR CLIENTE/S -> Solo ejecutar desde carpeta bin ****
+$cd bin
+$./cliente
+
+
+**** LIBERAR ENTORNO (IPCs) -> Puede ejecutarse desde cualquier ruta ****
+$bin/environment --stop

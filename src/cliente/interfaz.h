@@ -96,12 +96,8 @@ op_info_pago_t m_confirmar_reserva(m_id cli_id, bool aceptar);
  * @param cli_id: id retornado por m_init()
  * @param pago: dinero transferido (es una formalidad)
  *
- * @return
- * - estado del pago en caso de m_errno == RET_OK
- * - basura en caso de error
- *
  * @pre: Haber llamado a m_confirmar_reserva() en el ultimo uso del api con este cli_id
  */
-op_pago_ok_t m_pagar(m_id cli_id, int pago);
+void m_pagar(m_id cli_id, int pago);
 
 #endif //PROYECTO_INTERFAZ_H

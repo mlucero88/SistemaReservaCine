@@ -1,12 +1,11 @@
 #include <csignal>
 #include <cstdlib>
+#include <sys/ipc.h>
 
 #include "../common/color_print.h"
 #include "../common/ipc/msg_queue.h"
 
 #define MOM_LOG(fmt, ...) FPRINTF(stdout, KWHT, fmt, ##__VA_ARGS__)
-
-volatile bool quit = false;
 
 void salir() {
 	MOM_LOG("Proceso finalizado\n");
@@ -14,7 +13,7 @@ void salir() {
 }
 
 void handler(int signal) {
-	quit = true;
+	salir();
 }
 
 int main(int argc, char *argv[]) {
@@ -36,14 +35,24 @@ int main(int argc, char *argv[]) {
 	}
 
 	mensaje_t msg;
-	while (!quit) {
+	while (true) {
         msg_queue_receive(q_cli_rcv, 0, &msg);
         MOM_LOG("Recibo mensaje %s del cliente %i y lo mando al cine\n", strOpType(msg.tipo), msg.mtype);
+
+        /* Cuando hay timeout y nos avisa el cine (lo leo en el siguiente receive), este send deja en la cola un mensaje q el cine no lo lee xq se cerró */
         msg_queue_send(q_cine_snd, &msg);
         msg_queue_receive(q_cine_rcv, 0, &msg);
-        MOM_LOG("Envío respuesta %s al cliente %i\n", strOpType(msg.tipo), msg.mtype);
+
+        /* Parche para arreglar esto */
+        if(msg.tipo == TIMEOUT) {
+        	mensaje_t dummy;
+        	msg_queue_receive(q_cine_snd, msg.mtype, &dummy, IPC_NOWAIT);
+        }
+        /* Fin parche */
+
+        MOM_LOG("Envío respuesta %s al cliente %i\n\n", strOpType(msg.tipo), msg.mtype);
         msg_queue_send(q_cli_snd, &msg);
 	}
 
-	salir();
+	return 0;
 }

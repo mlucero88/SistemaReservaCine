@@ -22,6 +22,7 @@ typedef struct {
     	op_info_pago_t info_pago;
     	op_pagar_t pagar;
     	op_pago_ok_t pago_ok;
+    	op_reserva_cancelada_t reserva_cancelada;
     	op_timeout_t timeout;
     } op;
 } mensaje_t;
