@@ -75,7 +75,8 @@ void m_dest(m_id cli_id) {
 
 op_info_salas_t m_login(m_id cli_id) {
 	if(cli_state != INIT) {
-//		return ERR_OPINVALID;
+        m_errno = ERR_OPINVALID;
+        return op_info_salas_t {};
 	}
 
 	int ret;
@@ -97,7 +98,8 @@ op_info_salas_t m_login(m_id cli_id) {
 
 op_info_asientos_t m_seleccionar_sala(m_id cli_id, int nro_sala) {
 	if(cli_state != CINE_LOGIN) {
-//		return ERR_OPINVALID;
+        m_errno = ERR_OPINVALID;
+        return op_info_asientos_t {};
 	}
 
 	int ret;
@@ -119,7 +121,8 @@ op_info_asientos_t m_seleccionar_sala(m_id cli_id, int nro_sala) {
 
 op_info_reserva_t m_seleccionar_asientos(m_id cli_id, int asientos[MAX_ASIENTOS_RESERVADOS], int n_asientos) {
 	if(cli_state != SELECCION_SALA) {
-//		return ERR_OPINVALID;
+        m_errno = ERR_OPINVALID;
+        return op_info_reserva_t {};
 	}
 
 	int ret;
@@ -145,7 +148,8 @@ op_info_reserva_t m_seleccionar_asientos(m_id cli_id, int asientos[MAX_ASIENTOS_
 
 op_info_pago_t m_confirmar_reserva(m_id cli_id, bool aceptar) {
 	if(cli_state != SELECCION_ASIENTOS) {
-//		return ERR_OPINVALID;
+        m_errno = ERR_OPINVALID;
+        return op_info_pago_t {};
 	}
 
 	int ret;
@@ -170,7 +174,8 @@ op_info_pago_t m_confirmar_reserva(m_id cli_id, bool aceptar) {
 
 op_pago_ok_t m_pagar(m_id cli_id, int pago) {
 	if(cli_state != CONFIRMACION_RESERVA) {
-//		return ERR_OPINVALID;
+        m_errno = ERR_OPINVALID;
+        return op_pago_ok_t {};
 	}
 
 	int ret;
