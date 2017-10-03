@@ -51,10 +51,10 @@ int recibir_msj(long cli_id, mensaje_t &msg, int tipo) {
 }
 
 m_id m_init() {
-    //q_mom_snd = msg_queue_get(Q_CLI_MOM);
-    q_mom_snd = msg_queue_get(Q_CLI_CINE);
-    //q_mom_rcv = msg_queue_get(Q_MOM_CLI);
-    q_mom_rcv = msg_queue_get(Q_CINE_CLI);
+    q_mom_snd = msg_queue_get(Q_CLI_MOM);
+    //q_mom_snd = msg_queue_get(Q_CLI_CINE);
+    q_mom_rcv = msg_queue_get(Q_MOM_CLI);
+    //q_mom_rcv = msg_queue_get(Q_CINE_CLI);
 
 	if (q_mom_snd == -1 || q_mom_rcv == -1) {
 		m_errno = ERR_QUEUEGET;

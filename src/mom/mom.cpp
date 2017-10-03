@@ -1,6 +1,5 @@
 #include <csignal>
 #include <cstdlib>
-#include <unistd.h>
 
 #include "../common/color_print.h"
 #include "../common/ipc/msg_queue.h"
@@ -38,7 +37,12 @@ int main(int argc, char *argv[]) {
 
 	mensaje_t msg;
 	while (!quit) {
-		msg_queue_receive(q_cli_rcv, 0, &msg) && msg_queue_send(q_cine_snd, &msg) && msg_queue_receive(q_cine_rcv, 0, &msg) && msg_queue_send(q_cli_snd, &msg);
+        msg_queue_receive(q_cli_rcv, 0, &msg);
+        MOM_LOG("Recibo mensaje %s del cliente %i y lo mando al cine\n", strOpType(msg.tipo), msg.mtype);
+        msg_queue_send(q_cine_snd, &msg);
+        msg_queue_receive(q_cine_rcv, 0, &msg);
+        MOM_LOG("Envío respuesta %s al cliente %i\n", strOpType(msg.tipo), msg.mtype);
+        msg_queue_send(q_cli_snd, &msg);
 	}
 
 	salir();
