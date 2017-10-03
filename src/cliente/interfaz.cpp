@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <cstring>
 
 #include "interfaz.h"
 
@@ -25,19 +26,24 @@ static int q_mom_rcv;
 
 
 int enviar_msj(mensaje_t &msg) {
+    INT_PRINTF("cola %i\n", q_mom_snd);
 	return msg_queue_send(q_mom_snd, &msg) ? RET_OK : ERR_MSGSEND;
 }
 
 int recibir_msj(long cli_id, mensaje_t &msg, int tipo) {
+    INT_PRINTF("Esperando mensaje\n");
 	if (!msg_queue_receive(q_mom_rcv, cli_id, &msg)) {
 		return ERR_MSGRECV;
 	}
+    INT_PRINTF("Mensaje recibido\n");
+
 	if (msg.tipo != tipo) {
 		if (msg.tipo == TIMEOUT) {
 			cli_state = EXPIRADO;
 			return ERR_TIMEOUT;
 		}
 		else {
+            INT_PRINTF("Quería %s, recibí %s\n", strOpType(tipo), strOpType(msg.tipo));
 			INT_PRINTF("No deberia entrar nunca aca!!\n");
 			std::abort();
 		}
@@ -46,8 +52,10 @@ int recibir_msj(long cli_id, mensaje_t &msg, int tipo) {
 }
 
 m_id m_init() {
-	q_mom_snd = msg_queue_get(Q_CLI_MOM);
-	q_mom_rcv = msg_queue_get(Q_MOM_CLI);
+    //q_mom_snd = msg_queue_get(Q_CLI_MOM);
+    q_mom_snd = msg_queue_get(Q_CLI_CINE);
+    //q_mom_rcv = msg_queue_get(Q_MOM_CLI);
+    q_mom_rcv = msg_queue_get(Q_CINE_CLI);
 
 	if (q_mom_snd == -1 || q_mom_rcv == -1) {
 		m_errno = ERR_QUEUEGET;
@@ -68,7 +76,7 @@ void m_dest(m_id cli_id) {
 
 op_info_salas_t m_login(m_id cli_id) {
 	if(cli_state != INIT) {
-		return ERR_OPINVALID;
+//		return ERR_OPINVALID;
 	}
 
 	int ret;
@@ -76,6 +84,7 @@ op_info_salas_t m_login(m_id cli_id) {
 	msg.op.login.cli_id = cli_id;
 
 	if((ret = enviar_msj(msg)) == RET_OK) {
+        INT_PRINTF("Se envió LOGIN ok\n");
 		if((ret = recibir_msj(cli_id, msg, INFORMAR_SALAS)) == RET_OK) {
 			cli_state = CINE_LOGIN;
 			m_errno = RET_OK;
@@ -89,13 +98,13 @@ op_info_salas_t m_login(m_id cli_id) {
 
 op_info_asientos_t m_seleccionar_sala(m_id cli_id, int nro_sala) {
 	if(cli_state != CINE_LOGIN) {
-		return ERR_OPINVALID;
+//		return ERR_OPINVALID;
 	}
 
 	int ret;
 	mensaje_t msg = { .mtype = cli_id, .tipo = ELEGIR_SALA };
 	msg.op.elegir_sala.nro_sala = nro_sala;
-
+    INT_PRINTF("Mando elegir sala con nro %i\n", nro_sala);
 	if((ret = enviar_msj(msg)) == RET_OK) {
 		if((ret = recibir_msj(cli_id, msg, INFORMAR_ASIENTOS)) == RET_OK) {
 			cli_state = SELECCION_SALA;
@@ -111,17 +120,20 @@ op_info_asientos_t m_seleccionar_sala(m_id cli_id, int nro_sala) {
 
 op_info_reserva_t m_seleccionar_asientos(m_id cli_id, int asientos[MAX_ASIENTOS_RESERVADOS], int n_asientos) {
 	if(cli_state != SELECCION_SALA) {
-		return ERR_OPINVALID;
+//		return ERR_OPINVALID;
 	}
 
 	int ret;
 	mensaje_t msg = { .mtype = cli_id, .tipo = ELEGIR_ASIENTOS };
 	memcpy(msg.op.elegir_asientos.asientos_elegidos, asientos, sizeof(int) * n_asientos);
+    for (int i = 0; i < MAX_ASIENTOS_RESERVADOS; i++) {
+        INT_PRINTF("ASIENTO %i\n", asientos[i]);
+    }
 	msg.op.elegir_asientos.cant_elegidos = n_asientos;
-	msg.op.elegir_sala.nro_sala = _sala;
+    msg.op.elegir_asientos.nro_sala = _sala;
 
 	if((ret = enviar_msj(msg)) == RET_OK) {
-		if((ret = recibir_msj(cli_id, msg, INFORMAR_ASIENTOS)) == RET_OK) {
+        if ((ret = recibir_msj(cli_id, msg, INFORMAR_RESERVA)) == RET_OK) {
 			cli_state  = SELECCION_ASIENTOS;
 			m_errno = RET_OK;
 			return msg.op.info_reserva;
@@ -134,7 +146,7 @@ op_info_reserva_t m_seleccionar_asientos(m_id cli_id, int asientos[MAX_ASIENTOS_
 
 op_info_pago_t m_confirmar_reserva(m_id cli_id, bool aceptar) {
 	if(cli_state != SELECCION_ASIENTOS) {
-		return ERR_OPINVALID;
+//		return ERR_OPINVALID;
 	}
 
 	int ret;
@@ -159,7 +171,7 @@ op_info_pago_t m_confirmar_reserva(m_id cli_id, bool aceptar) {
 
 op_pago_ok_t m_pagar(m_id cli_id, int pago) {
 	if(cli_state != CONFIRMACION_RESERVA) {
-		return ERR_OPINVALID;
+//		return ERR_OPINVALID;
 	}
 
 	int ret;

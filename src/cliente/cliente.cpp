@@ -9,17 +9,16 @@
 
 bool pedir_confirmacion_reserva();
 
-void mostrar_info_salas(int asientos_por_sala[MAX_SALAS], int cant_salas);
+void mostrar_info_salas(op_info_salas_t info_salas);
 
-int pedir_asientos(int asientos_habilitados[MAX_ASIENTOS], int cant_asientos,
-                   int asientos_elegidos[MAX_ASIENTOS_RESERVADOS]);
+int pedir_asientos(op_info_asientos_t info_asientos, int asientos_elegidos[MAX_ASIENTOS_RESERVADOS]);
 
-int pedir_sala(int asientos_por_sala[MAX_SALAS], int cant_salas);
+int pedir_sala(op_info_salas_t info_salas);
 
 void mostrar_asientos_reservados(int asientos_elegidos[MAX_ASIENTOS_RESERVADOS], int cant_elegidos,
-                                 int asientos_reservados[MAX_ASIENTOS_RESERVADOS], int cant_reservados);
+                                 op_info_reserva_t info_reserva);
 
-void mostrar_asientos(int asientos[MAX_ASIENTOS]);
+void mostrar_asientos(op_info_asientos_t info_asientos);
 
 void liberar_y_salir() {
 	exit(1);
@@ -49,48 +48,48 @@ int main(int argc, char* argv[]) {
     	CLI_LOG("Error en la inicializacion: %s\n", m_str_error(m_errno));
     	liberar_y_salir();
     }
-
+    CLI_LOG("MOM incializado ok\n");
     /* LOGIN */
-    m_login(mom_id);
+//    m_login(mom_id);
+    op_info_salas_t info_salas = m_login(mom_id);
     if(m_errno != RET_OK) {
     	CLI_LOG("Error en el login: %s\n", m_str_error(m_errno));
     	liberar_y_salir();
     }
-
+    CLI_LOG("LOGIN ok\n");
     /* INFO GENERAL DE LAS SALAS */
-    int info_salas[MAX_SALAS];
-    int cant_salas = m_info_salas(mom_id, info_salas);
+//    int info_salas[MAX_SALAS];
+
+//    int cant_salas = m_info_salas(mom_id, info_salas);
     if(m_errno != RET_OK) {
     	CLI_LOG("Error al obtener informacion de las salas: %s\n", m_str_error(m_errno));
     	liberar_y_salir();
     }
-    mostrar_info_salas(info_salas, cant_salas);
+    mostrar_info_salas(info_salas);
 
     /* ELEGIR UNA SALA */
-    int asientos_habilitados[MAX_ASIENTOS];
-    int nro_sala = pedir_sala(info_salas, cant_salas);
-    int cant_asientos = m_asientos_sala(mom_id, nro_sala, asientos_habilitados);
+    int nro_sala = pedir_sala(info_salas);
+    op_info_asientos_t info_asientos = m_seleccionar_sala(mom_id, nro_sala);
     if(m_errno != RET_OK) {
     	CLI_LOG("Error al obtener informacion de los asientos: %s\n", m_str_error(m_errno));
     	liberar_y_salir();
     }
-    mostrar_asientos(asientos_habilitados);
+    mostrar_asientos(info_asientos);
 
     /* ELEGIR ASIENTOS DENTRO DE LA SALA ELEGIDA */
     int asientos_elegidos[MAX_ASIENTOS_RESERVADOS];
-    int cant_elegidos = pedir_asientos(asientos_habilitados, cant_asientos, asientos_elegidos);
-    int asientos_reservados[MAX_ASIENTOS_RESERVADOS];
-    int cant_reservados = m_reservar_asientos(mom_id, asientos_elegidos, cant_elegidos, nro_sala, asientos_reservados);
+    int cant_elegidos = pedir_asientos(info_asientos, asientos_elegidos);
+    CLI_LOG("Se pidieron %i asientos\n", cant_elegidos);
+    op_info_reserva_t info_reserva = m_seleccionar_asientos(mom_id, asientos_elegidos, cant_elegidos);
     if(m_errno != RET_OK) {
     	CLI_LOG("Error al reservar los asientos: %s\n", m_str_error(m_errno));
     	liberar_y_salir();
     }
-    printf("\nSe reservaron %i/%i asientos: ", cant_reservados, cant_elegidos);
-    mostrar_asientos_reservados(asientos_elegidos, cant_elegidos, asientos_reservados, cant_reservados);
+    mostrar_asientos_reservados(asientos_elegidos, cant_elegidos, info_reserva);
 
     /* CONFIRMAR LA RESERVA */
     bool confirmacion = pedir_confirmacion_reserva();
-    int precio = m_confirmar_reserva(mom_id, confirmacion);
+    op_info_pago_t info_pago = m_confirmar_reserva(mom_id, confirmacion);
     if(m_errno != RET_OK) {
     	CLI_LOG("Error al confirmar la reserva: %s\n", m_str_error(m_errno));
     	liberar_y_salir();
@@ -101,11 +100,12 @@ int main(int argc, char* argv[]) {
     }
 
     /* PAGAR */
+    int precio = info_pago.precio;
     printf("\nSu total a abonar es: $%d\n", precio);
     printf("\nPresione enter para enviar el pago...");
     getchar();
     printf("Esperando respuesta de pago...\n");
-    m_pagar(mom_id, precio);
+    op_pago_ok_t pago_ok = m_pagar(mom_id, precio);
     if(m_errno != RET_OK) {
     	CLI_LOG("Error al pagar la reserva: %s\n", m_str_error(m_errno));
     	liberar_y_salir();
@@ -116,7 +116,9 @@ int main(int argc, char* argv[]) {
 }
 
 void mostrar_asientos_reservados(int asientos_elegidos[MAX_ASIENTOS_RESERVADOS], int cant_elegidos,
-                                 int asientos_reservados[MAX_ASIENTOS_RESERVADOS], int cant_reservados) {
+                                 op_info_reserva_t info_reserva) {
+    int *asientos_reservados = info_reserva.asientos_reservados;
+    int cant_reservados = info_reserva.cant_reservados;
     printf("\nSe reservaron %i/%i asientos: ", cant_reservados, cant_elegidos);
     for (int i = 0; i < MAX_ASIENTOS_RESERVADOS; i++) {
         if (asientos_reservados[i]) {
@@ -126,8 +128,10 @@ void mostrar_asientos_reservados(int asientos_elegidos[MAX_ASIENTOS_RESERVADOS],
     printf("\n");
 }
 
-int pedir_asientos(int asientos_habilitados[MAX_ASIENTOS], int cant_asientos,
+int pedir_asientos(op_info_asientos_t info_asientos,
                    int asientos_elegidos[MAX_ASIENTOS_RESERVADOS]) {
+    int *asientos_habilitados = info_asientos.asiento_habilitado;
+    int cant_asientos = info_asientos.cant_asientos;
     int asiento, cant_elegidos = 0;
     memset(asientos_elegidos, 0, MAX_ASIENTOS_RESERVADOS * sizeof(int));
 
@@ -147,7 +151,7 @@ int pedir_asientos(int asientos_habilitados[MAX_ASIENTOS], int cant_asientos,
             } else {
                 printf("Debe elegir al menos un asiento!\n");
             }
-        } else if (asiento >= 0 && asiento < cant_asientos) {
+        } else if (asiento >= 0 && asiento < MAX_ASIENTOS) {
             if (asientos_habilitados[asiento] == DISPONIBLE) {
                 asientos_elegidos[cant_elegidos++] = asiento;
                 asientos_habilitados[asiento] = RESERVADO;
@@ -183,16 +187,20 @@ bool pedir_confirmacion_reserva() {
     return aceptarReserva;
 }
 
-void mostrar_info_salas(int asientos_por_sala[MAX_SALAS], int cant_salas) {
+void mostrar_info_salas(op_info_salas_t info_salas) {
+    int *asientos_por_sala = info_salas.asientos_por_sala;
+    int cant_salas = info_salas.cant_salas;
     printf("\nCantidad de salas: %i\n", cant_salas);
-    for (int i = 0; i < cant_salas; i++) {
+    for (int i = 0; i < info_salas.cant_salas; i++) {
         printf("SALA %i -> %i\n", i + 1, asientos_por_sala[i]);
     }
 }
 
 
-int pedir_sala(int asientos_por_sala[MAX_SALAS], int cant_salas) {
+int pedir_sala(op_info_salas_t info_salas) {
 
+    int *asientos_por_sala = info_salas.asientos_por_sala;
+    int cant_salas = info_salas.cant_salas;
     int nro_sala;
     bool salaElegida = false;
     do {
@@ -215,9 +223,13 @@ int pedir_sala(int asientos_por_sala[MAX_SALAS], int cant_salas) {
     return nro_sala;
 }
 
-void mostrar_asientos(int *asientos) {
+void mostrar_asientos(op_info_asientos_t info_asientos) {
     for (int j = 0; j < MAX_ASIENTOS; j++) {
-        printf("%c", asientos[j] == DISPONIBLE ? 'O' : 'X');
+        printf("%03i ", j);
+    }
+    printf("\n");
+    for (int j = 0; j < MAX_ASIENTOS; j++) {
+        printf(" %c  ", info_asientos.asiento_habilitado[j] == DISPONIBLE ? 'O' : 'X');
     }
     printf("\n");
 }
