@@ -90,8 +90,11 @@ m_id m_init() {
 
 void m_dest(m_id cli_id) {
 	if (cli_state != NOT_INIT) {
-		pthread_kill(notification_thread.native_handle(), SIGUSR1);
 		if (notification_thread.joinable()) {
+			/* Si hubo un timeout antes de confirmar la reserva, tengo q desbloquear el thread desde aca */
+			if(!quit_thread_loop) {
+				pthread_kill(notification_thread.native_handle(), SIGUSR1);
+			}
 			notification_thread.join();
 		}
 	}
@@ -201,6 +204,8 @@ op_info_pago_t m_confirmar_reserva(m_id cli_id, bool aceptar) {
 	if ((ret = _enviar_msj(msg)) == RET_OK) {
 		int tipo = aceptar ? INFORMAR_PAGO : RESERVA_CANCELADA;
 		if ((ret = _recibir_msj(cli_id, msg, tipo)) == RET_OK) {
+			/* Ya tomo una decision de la reserva. No necesita seguir siendo notificado */
+			pthread_kill(notification_thread.native_handle(), SIGUSR1);
 			m_errno = RET_OK;
 
 			if (aceptar) {

@@ -41,6 +41,11 @@ int main(int argc, char* argv[]) {
     sigaction(SIGCHLD, &sigchld, NULL);
     signal(SIGINT, sighandler);
 
+    op_info_asientos_t info_asientos;
+    info_asientos.nro_sala = -1;
+    int asientos_elegidos[MAX_ASIENTOS_RESERVADOS];
+    memset(asientos_elegidos, -1, MAX_ASIENTOS_RESERVADOS * sizeof(int));
+
     CLI_LOG("PID: %i\n\n", getpid());
 
     /* INICIALIZAR */
@@ -51,8 +56,30 @@ int main(int argc, char* argv[]) {
     }
 
     /* REGISTRO DE CALLBACK */
-    m_reg_cb_actualizacion_sala(mom_id, [](const op_info_asientos_t& info) {
-    	mostrar_asientos(info);
+    m_reg_cb_actualizacion_sala(mom_id, [&info_asientos, &asientos_elegidos](const op_info_asientos_t& nueva_info) {
+    	/* Lo correcto seria lockear esta porcion de codigo junto con pedir_asientos, pero como es una vista
+    	 * sencilla que escapa de la idea del tp, omitimos lockear */
+    	/* Actualizamos el vector que usamos para leer las reservas del usuario */
+    	if(info_asientos.nro_sala == nueva_info.nro_sala) {
+    		for (int nro_asiento = 0; nro_asiento < MAX_ASIENTOS; nro_asiento++) {
+    			/* Veo si el estado del asiento cambio */
+    			if(info_asientos.asiento_habilitado[nro_asiento] != nueva_info.asiento_habilitado[nro_asiento]) {
+    				/* Me aseguro q el cambio no haya sido por pedir_asientos() */
+    				bool cambiar = true;
+    				for(int k = 0; k < MAX_ASIENTOS_RESERVADOS; ++k) {
+    					if(nro_asiento == asientos_elegidos[k]) {
+    						/* Fue cambio por pedir_asiento() */
+    						cambiar = false;
+    						break;
+    					}
+    				}
+    				if(cambiar) {
+    					info_asientos.asiento_habilitado[nro_asiento] = nueva_info.asiento_habilitado[nro_asiento];
+    				}
+    			}
+    		}
+    		mostrar_asientos(info_asientos);
+    	}
     });
 
     /* LOGIN */
@@ -65,15 +92,13 @@ int main(int argc, char* argv[]) {
     /* ELEGIR UNA SALA */
     mostrar_info_salas(info_salas);
     int nro_sala = pedir_sala(info_salas);
-    op_info_asientos_t info_asientos = m_seleccionar_sala(mom_id, nro_sala);
+    info_asientos = m_seleccionar_sala(mom_id, nro_sala);
     if(m_errno != RET_OK) {
     	CLI_LOG("Error al seleccionar sala: %s\n", m_str_error(m_errno));
     	liberar_y_salir();
     }
 
     /* ELEGIR ASIENTOS DENTRO DE LA SALA ELEGIDA */
-    mostrar_asientos(info_asientos);
-    int asientos_elegidos[MAX_ASIENTOS_RESERVADOS];
     int cant_elegidos = pedir_asientos(info_asientos, asientos_elegidos);
     CLI_LOG("Se pidieron %i asientos\n", cant_elegidos);
     op_info_reserva_t info_reserva = m_seleccionar_asientos(mom_id, asientos_elegidos, cant_elegidos);
@@ -137,10 +162,11 @@ int pedir_sala(const op_info_salas_t &info_salas) {
 int pedir_asientos(op_info_asientos_t& info_asientos,
                    int asientos_elegidos[MAX_ASIENTOS_RESERVADOS]) {
     int asiento, cant_elegidos = 0;
-    memset(asientos_elegidos, 0, MAX_ASIENTOS_RESERVADOS * sizeof(int));
 
     bool finEleccionAsientos = false;
     do {
+    	mostrar_asientos(info_asientos);
+
         printf("\nElija un asiento (-1 para finalizar eleccion)(el primer asiento es 0): ");
         char asiento_str[12];
         fgets(asiento_str, 12, stdin);
