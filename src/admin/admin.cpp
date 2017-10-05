@@ -9,7 +9,6 @@
 #define ADMIN_LOG(fmt, ...) FPRINTF(stdout, KGRN, fmt, ##__VA_ARGS__)
 
 void mostrar_asientos(int n_sala, int asientos_salas[MAX_SALAS][MAX_ASIENTOS]) {
-    //ADMIN_LOG("\nHay %i asientos en total en la sala\n", n_sala + 1);
     ADMIN_LOG("En la sala %i los asientos son: \n", n_sala);
     for (int j = 0; j < MAX_ASIENTOS; j++) {
     	ADMIN_LOG("%c\n", asientos_salas[n_sala][j] == DISPONIBLE ? 'O' : 'X');
@@ -43,7 +42,7 @@ void notificar_clientes(int q_admin_cliente, int nro_sala, int asientos_salas[MA
         	ADMIN_LOG("Notificando cliente %i\n", salas_clientes[nro_sala][i]);
             // 0 si no hay cliente en esa posicion, si no, es el pid del cliente, != 0
             msg.mtype = cli;
-//            msg_queue_send(q_admin_cliente, &msg);	todo por ahora lo saco para no dejar msg en la cola, hasta q implementemos esto
+            msg_queue_send(q_admin_cliente, &msg);
         }
     }
 }
@@ -210,6 +209,7 @@ int main(int argc, char *argv[]) {
     			else {
     				ADMIN_LOG("Reserva cancelada por cliente %i\n", cli_id);
     				cancelar_reserva(reservas, asientos_salas, cli_id, msg.op.confirmar_reserva.nro_sala, n_asientos_salas);
+    				notificar_clientes(q_cliente_snd, msg.op.confirmar_reserva.nro_sala, asientos_salas, n_asientos_salas, salas_clientes, cli_id);
         			quitar_cliente_sistema(cli_id, salas_clientes);
     				msg.tipo = RESERVA_CANCELADA;
     				msg_queue_send(q_cine_snd, &msg);
@@ -233,8 +233,8 @@ int main(int argc, char *argv[]) {
                 ADMIN_LOG("TIMEOUT cliente %i\n", cliente);
 
     			cancelar_reserva(reservas, asientos_salas, cliente, n_sala, n_asientos_salas);
-    			quitar_cliente_sistema(cliente, salas_clientes, n_sala);
     			notificar_clientes(q_cliente_snd, n_sala, asientos_salas, n_asientos_salas, salas_clientes, cliente);
+    			quitar_cliente_sistema(cliente, salas_clientes, n_sala);
     			break;
     		}
     		default: {

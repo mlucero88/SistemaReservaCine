@@ -14,6 +14,7 @@ set(CINE_LOGIN_FILES src/cine_login/cine_login.cpp)
 set(ENVIRONMENT_FILES src/environment/environment.cpp)
 set(COMMON_FILES src/common/ipc/msg_queue.cpp src/common/ipc/sh_mem.cpp)
 
+find_package (Threads)
 
 add_executable(admin ${ADMIN_FILES} ${COMMON_FILES})
 add_executable(cliente ${CLIENT_FILES} ${COMMON_FILES})
@@ -21,3 +22,5 @@ add_executable(mom ${MOM_FILES} ${COMMON_FILES})
 add_executable(cine ${CINE_FILES} ${COMMON_FILES})
 add_executable(cine_login ${CINE_LOGIN_FILES} ${COMMON_FILES})
 add_executable(environment ${ENVIRONMENT_FILES} ${COMMON_FILES})
+
+target_link_libraries (cliente ${CMAKE_THREAD_LIBS_INIT})

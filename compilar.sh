@@ -24,7 +24,7 @@ for bin in ${BINARIOS[@]}; do
 			g++ -std=c++11 -g3 -O0 -I${SRC_DIR} ${COMMON_DIR}/ipc/msg_queue.cpp ${SRC_DIR}/${bin}/${bin}.cpp -o ${PROJ_DIR}/bin/${bin}
 			;;
 		cliente)
-			g++ -std=c++11 -g3 -O0 -I${SRC_DIR} ${COMMON_DIR}/ipc/msg_queue.cpp ${SRC_DIR}/${bin}/interfaz.cpp ${SRC_DIR}/${bin}/${bin}.cpp -o ${PROJ_DIR}/bin/${bin}
+			g++ -std=c++11 -g3 -O0 -I${SRC_DIR} ${COMMON_DIR}/ipc/msg_queue.cpp ${SRC_DIR}/${bin}/interfaz.cpp ${SRC_DIR}/${bin}/${bin}.cpp -lpthread -o ${PROJ_DIR}/bin/${bin}
 			;;
 		cine_login)
 			g++ -std=c++11 -g3 -O0 -I${SRC_DIR} ${COMMON_DIR}/ipc/msg_queue.cpp ${SRC_DIR}/${bin}/${bin}.cpp -o ${PROJ_DIR}/bin/${bin}

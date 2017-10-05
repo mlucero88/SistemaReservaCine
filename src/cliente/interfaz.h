@@ -1,6 +1,8 @@
 #ifndef PROYECTO_INTERFAZ_H
 #define PROYECTO_INTERFAZ_H
 
+#include <functional>
+
 #include "../common/operaciones.h"
 
 /* Posibles valores de m_errno */
@@ -22,7 +24,9 @@ typedef long m_id;	// todo buscar como generar el uuid
 
 /* Inicia el MOM cliente.
  *
- * @return cli_id
+ * @return
+ * - cli_id en caso de m_errno == RET_OK
+ * - basura en caso de error
  */
 m_id m_init();
 
@@ -99,5 +103,16 @@ op_info_pago_t m_confirmar_reserva(m_id cli_id, bool aceptar);
  * @pre: Haber llamado a m_confirmar_reserva() en el ultimo uso del api con este cli_id
  */
 void m_pagar(m_id cli_id, int pago);
+
+/*
+ * Registra una funcion de callback para el evento de notificacion de cambios en la sala.
+ * Esta funcion se ejecuta en otro hilo de ejecucion.
+ *
+ * @param cli_id: id retornado por m_init()
+ * @param handler: callback ejecutada asincronicamente al recibir evento de notificacion
+ *
+ * @pre: Haber llamado a m_init()
+ */
+void m_reg_cb_actualizacion_sala(m_id cli_id, std::function<void(const op_info_asientos_t&)> handler);
 
 #endif //PROYECTO_INTERFAZ_H
