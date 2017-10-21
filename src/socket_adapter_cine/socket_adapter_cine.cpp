@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
         std::cout << "socket_adaper_cine <serv port>" << std::endl;
         exit(0);
     }
-    int serv_port = atoi(argv[2]);
+    int serv_port = atoi(argv[1]);
     int q_cine_rcv = msg_queue_get(Q_CLI_CINE_B);
     int q_cine_snd = msg_queue_get(Q_CINE_CLI_B);
 
@@ -52,17 +52,23 @@ int main(int argc, char *argv[]) {
         }
         int new_sock_id = r;
         if (fork() == 0) {
-            r = sock_recv(new_sock_id, &msg, sizeof(msg)); // Recibe mensaje del cliente
-            if (r != sizeof(msg)) {
-                MOM_LOG("No se pudo recibir mensaje del cliente\n");
-                salir();
-            }
-            msg_queue_send(q_cine_rcv, &msg); // Envía mensaje al cine a Q_CLI_CINE
-            msg_queue_receive(q_cine_snd, 0, &msg);// Recibe respuesta del cine en Q_CINE_CLI
-            r = sock_send(new_sock_id, &msg, sizeof(msg)); // Envía respuesta al cliente
-            if (r != sizeof(msg)) {
-                MOM_LOG("No se pudo enviar respuesta al cliente\n");
-                salir();
+            while (true) {
+                r = sock_recv(new_sock_id, &msg, sizeof(msg)); // Recibe mensaje del cliente
+                if (r != sizeof(msg)) {
+                    MOM_LOG("No se pudo recibir mensaje del cliente\n");
+                    salir();
+                }
+                MOM_LOG("Recibo mensaje del cliente\n");
+                msg_queue_send(q_cine_rcv, &msg); // Envía mensaje al cine a Q_CLI_CINE
+                MOM_LOG("Envío mensaje al cine\n");
+                msg_queue_receive(q_cine_snd, 0, &msg);// Recibe respuesta del cine en Q_CINE_CLI
+                MOM_LOG("Recibo respuesta del cine\n");
+                r = sock_send(new_sock_id, &msg, sizeof(msg)); // Envía respuesta al cliente
+                if (r != sizeof(msg)) {
+                    MOM_LOG("No se pudo enviar respuesta al cliente\n");
+                    salir();
+                }
+                MOM_LOG("Envío respuesta al cliente\n");
             }
         }
     }

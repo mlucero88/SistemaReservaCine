@@ -18,8 +18,7 @@ int sock_connect(int sock_id, const char *addr, int port) {
     sock_addr.sin_family = AF_INET;
     sock_addr.sin_addr.s_addr = inet_addr(addr);
     sock_addr.sin_port = htons(port);
-    socklen_t sock_len;
-    return connect(sock_id, (struct sockaddr *) &sock_addr, sock_len);
+    return connect(sock_id, (struct sockaddr *) &sock_addr, sizeof(sock_addr));
 }
 
 int sock_bind(int sock_id, int port) {

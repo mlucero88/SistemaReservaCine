@@ -25,6 +25,8 @@ int main(int argc, char *argv[]) {
     char *serv_addr = argv[1];
     int serv_port = atoi(argv[2]);
 
+    MOM_LOG("Conectando a %s:%i\n", serv_addr, serv_port);
+
     int q_cine_snd = msg_queue_get(Q_CLI_CINE_A);
     int q_cine_rcv = msg_queue_get(Q_CINE_CLI_A);
 
@@ -34,26 +36,34 @@ int main(int argc, char *argv[]) {
     }
 
     int sock_id = sock_create();
+    if (sock_id == -1) {
+        MOM_LOG("Error al crear el socket del cliente\n");
+        salir();
+    }
     int r = sock_connect(sock_id, serv_addr, serv_port);
     if (r != 0) {
         MOM_LOG("No se pudo conectar al servidor\n");
         salir();
     }
-
+    MOM_LOG("Conectado!\n");
     mensaje_t msg;
     while (true) {
         msg_queue_receive(q_cine_snd, 0, &msg);// Recive del mom en Q_CLI_CINE
+        MOM_LOG("Recibo mensaje del cliente\n");
         r = sock_send(sock_id, &msg, sizeof(msg)); // Envía por el socket al cine
         if (r != sizeof(msg)) {
             MOM_LOG("No se pudo enviar mensaje al servidor\n");
             salir();
         }
+        MOM_LOG("Envío mensaje al cine\n");
         sock_recv(sock_id, &msg, sizeof(msg)); // Recibe respuesta del cine
         if (r != sizeof(msg)) {
             MOM_LOG("No se pudo recibir respuesta del servidor\n");
             salir();
         }
+        MOM_LOG("Recibo respuesta del cine\n");
         msg_queue_send(q_cine_rcv, &msg); // Envía respuesta al mom a Q_CINE_CLI
+        MOM_LOG("Envío respuesta al cliente\n");
     }
 
     return 0;
