@@ -22,5 +22,6 @@ add_executable(mom ${MOM_FILES} ${COMMON_FILES})
 add_executable(cine ${CINE_FILES} ${COMMON_FILES})
 add_executable(cine_login ${CINE_LOGIN_FILES} ${COMMON_FILES})
 add_executable(environment ${ENVIRONMENT_FILES} ${COMMON_FILES})
-
+add_executable(socket_adapter_cine src/socket_adapter_cine/socket_adapter_cine.cpp ${COMMON_FILES})
+add_executable(socket_adapter_cliente src/socket_adapter_cliente/socket_adapter_cliente.cpp ${COMMON_FILES})
 target_link_libraries (cliente ${CMAKE_THREAD_LIBS_INIT})

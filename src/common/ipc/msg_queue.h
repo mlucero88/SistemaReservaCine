@@ -4,7 +4,15 @@
 #include "../operaciones.h"
 
 typedef enum {
-    Q_CINE_CLI = 1, Q_CLI_CINE, Q_ADMIN_CINE, Q_CINE_ADMIN, Q_ADMIN_CLI, Q_CLI_MOM, Q_MOM_CLI	// Para CINE y ADMIN, el CLI en realidad es el MOM, pero ellos no saben
+	Q_CINE_CLI_A,
+	Q_CLI_CINE_A,
+	Q_CINE_CLI_B,
+	Q_CLI_CINE_B,
+	Q_ADMIN_CINE,
+	Q_CINE_ADMIN,
+	Q_ADMIN_CLI,
+	Q_CLI_MOM,
+	Q_MOM_CLI    // Para CINE y ADMIN, el CLI en realidad es el MOM, pero ellos no saben
 } msg_queue_direction;
 
 /* Estructura de mensaje unico, usado por el sistema */

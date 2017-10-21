@@ -13,8 +13,8 @@ int main(int argc, char* argv[]) {
     sigemptyset(&sigchld.sa_mask);
     sigaction(SIGCHLD, &sigchld, NULL);
 
-	int q_cli_snd = msg_queue_get(Q_CINE_CLI);
-	int q_cli_rcv = msg_queue_get(Q_CLI_CINE);
+    int q_cli_snd = msg_queue_get(Q_CINE_CLI_B);
+    int q_cli_rcv = msg_queue_get(Q_CLI_CINE_B);
 
 	if (q_cli_snd == -1 || q_cli_rcv == -1) {
 		CINE_LOG("Error al crear canal de comunicacion entre cine y cliente\n");

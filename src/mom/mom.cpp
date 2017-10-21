@@ -22,8 +22,8 @@ int main(int argc, char *argv[]) {
 	int q_cli_snd = msg_queue_get(Q_MOM_CLI);
 	int q_cli_rcv = msg_queue_get(Q_CLI_MOM);
 
-	int q_cine_snd = msg_queue_get(Q_CLI_CINE);
-	int q_cine_rcv = msg_queue_get(Q_CINE_CLI);
+	int q_cine_snd = msg_queue_get(Q_CLI_CINE_A);
+	int q_cine_rcv = msg_queue_get(Q_CINE_CLI_A);
 
 	if (q_cli_snd == -1 || q_cli_rcv == -1) {
 		MOM_LOG("Error al crear canal de comunicacion entre mom y cliente\n");

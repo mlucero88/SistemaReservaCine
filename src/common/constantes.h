@@ -31,4 +31,6 @@
 
 #define MAX_CLIENTES 20 // Máxima cantidad de clientes que pueden estar en una sala al mismo tiempo
 
+#define SERV_ADDR "127.0.0.1"
+
 #endif /* COMMON_CONSTANTES_H_ */

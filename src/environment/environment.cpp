@@ -22,11 +22,19 @@ int main(int argc, char *argv[]) {
             std::cerr << "Error al crear msg_q CINE_ADMIN: " << strerror(errno) << std::endl;
             success = false;
         }
-        if (msg_queue_create(Q_CINE_CLI) == -1) {
+        if (msg_queue_create(Q_CINE_CLI_A) == -1) {
             std::cerr << "Error al crear msg_q CINE_CLI: " << strerror(errno) << std::endl;
             success = false;
         }
-        if (msg_queue_create(Q_CLI_CINE) == -1) {
+        if (msg_queue_create(Q_CLI_CINE_A) == -1) {
+            std::cerr << "Error al crear msg_q CLI_CINE: " << strerror(errno) << std::endl;
+            success = false;
+        }
+        if (msg_queue_create(Q_CINE_CLI_B) == -1) {
+            std::cerr << "Error al crear msg_q CINE_CLI: " << strerror(errno) << std::endl;
+            success = false;
+        }
+        if (msg_queue_create(Q_CLI_CINE_B) == -1) {
             std::cerr << "Error al crear msg_q CLI_CINE: " << strerror(errno) << std::endl;
             success = false;
         }
@@ -56,8 +64,10 @@ int main(int argc, char *argv[]) {
     if (std::strcmp(argv[1], "--stop") == 0) {
         msg_queue_destroy(msg_queue_get(Q_ADMIN_CINE));
         msg_queue_destroy(msg_queue_get(Q_CINE_ADMIN));
-        msg_queue_destroy(msg_queue_get(Q_CINE_CLI));
-        msg_queue_destroy(msg_queue_get(Q_CLI_CINE));
+        msg_queue_destroy(msg_queue_get(Q_CINE_CLI_A));
+        msg_queue_destroy(msg_queue_get(Q_CLI_CINE_A));
+        msg_queue_destroy(msg_queue_get(Q_CINE_CLI_B));
+        msg_queue_destroy(msg_queue_get(Q_CLI_CINE_B));
         msg_queue_destroy(msg_queue_get(Q_ADMIN_CLI));
         msg_queue_destroy(msg_queue_get(Q_CLI_MOM));
         msg_queue_destroy(msg_queue_get(Q_MOM_CLI));

@@ -80,8 +80,8 @@ int main(int argc, char *argv[]) {
 	cli_id = atoi(argv[1]);
 	CINE_LOG("Iniciado proceso para cliente [%i]\n", cli_id);
 
-	q_cli_snd = msg_queue_get(Q_CINE_CLI);
-	q_cli_rcv = msg_queue_get(Q_CLI_CINE);
+	q_cli_snd = msg_queue_get(Q_CINE_CLI_B);
+	q_cli_rcv = msg_queue_get(Q_CLI_CINE_B);
 
 	q_admin_snd = msg_queue_get(Q_CINE_ADMIN);
 	q_admin_rcv = msg_queue_get(Q_ADMIN_CINE);
