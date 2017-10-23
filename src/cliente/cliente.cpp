@@ -7,7 +7,7 @@
 
 #define CLI_LOG(fmt, ...) FPRINTF(stdout, KCYN, fmt, ##__VA_ARGS__)
 
-static m_id mom_id;
+static uuid_t cli_id;
 
 int pedir_sala(const op_info_salas_t& info_salas);
 
@@ -23,7 +23,7 @@ void mostrar_asientos_reservados(const int asientos_elegidos[MAX_ASIENTOS_RESERV
                                  const op_info_reserva_t& info_reserva);
 
 void liberar_y_salir() {
-	m_dest(mom_id);
+	m_dest(cli_id);
 	exit(1);
 }
 
@@ -49,14 +49,14 @@ int main(int argc, char* argv[]) {
     CLI_LOG("PID: %i\n\n", getpid());
 
     /* INICIALIZAR */
-    mom_id = m_init();
+    cli_id = m_init();
     if(m_errno != RET_OK) {
     	CLI_LOG("Error en la inicializacion: %s\n", m_str_error(m_errno));
     	liberar_y_salir();
     }
 
     /* REGISTRO DE CALLBACK */
-    m_reg_cb_actualizacion_sala(mom_id, [&info_asientos, &asientos_elegidos](const op_info_asientos_t& nueva_info) {
+    m_reg_cb_actualizacion_sala(cli_id, [&info_asientos, &asientos_elegidos](const op_info_asientos_t& nueva_info) {
     	/* Lo correcto seria lockear esta porcion de codigo junto con pedir_asientos, pero como es una vista
     	 * sencilla que escapa de la idea del tp, omitimos lockear */
     	/* Actualizamos el vector que usamos para leer las reservas del usuario */
@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
     });
 
     /* LOGIN */
-    op_info_salas_t info_salas = m_login(mom_id);
+    op_info_salas_t info_salas = m_login(cli_id);
     if(m_errno != RET_OK) {
     	CLI_LOG("Error en el login: %s\n", m_str_error(m_errno));
     	liberar_y_salir();
@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
     /* ELEGIR UNA SALA */
     mostrar_info_salas(info_salas);
     int nro_sala = pedir_sala(info_salas);
-    info_asientos = m_seleccionar_sala(mom_id, nro_sala);
+    info_asientos = m_seleccionar_sala(cli_id, nro_sala);
     if(m_errno != RET_OK) {
     	CLI_LOG("Error al seleccionar sala: %s\n", m_str_error(m_errno));
     	liberar_y_salir();
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
     /* ELEGIR ASIENTOS DENTRO DE LA SALA ELEGIDA */
     int cant_elegidos = pedir_asientos(info_asientos, asientos_elegidos);
     CLI_LOG("Se pidieron %i asientos\n", cant_elegidos);
-    op_info_reserva_t info_reserva = m_seleccionar_asientos(mom_id, asientos_elegidos, cant_elegidos);
+    op_info_reserva_t info_reserva = m_seleccionar_asientos(cli_id, asientos_elegidos, cant_elegidos);
     if(m_errno != RET_OK) {
     	CLI_LOG("Error al reservar los asientos: %s\n", m_str_error(m_errno));
     	liberar_y_salir();
@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
     /* CONFIRMAR LA RESERVA */
     mostrar_asientos_reservados(asientos_elegidos, cant_elegidos, info_reserva);
     bool confirmacion = pedir_confirmacion_reserva();
-    op_info_pago_t info_pago = m_confirmar_reserva(mom_id, confirmacion);
+    op_info_pago_t info_pago = m_confirmar_reserva(cli_id, confirmacion);
     if(m_errno != RET_OK) {
     	CLI_LOG("Error al confirmar la reserva: %s\n", m_str_error(m_errno));
     	liberar_y_salir();
@@ -126,7 +126,7 @@ int main(int argc, char* argv[]) {
     printf("\nPresione enter para enviar el pago...");
     getchar();
     printf("Esperando respuesta de pago...\n");
-    m_pagar(mom_id, precio);
+    m_pagar(cli_id, precio);
     if(m_errno != RET_OK) {
     	CLI_LOG("Error al pagar la reserva: %s\n", m_str_error(m_errno));
     	liberar_y_salir();

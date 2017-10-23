@@ -8,7 +8,7 @@
 
 #define CINE_LOG(fmt, ...) FPRINTF(stdout, KRED, "[CINE_%i] " fmt, getpid() , ##__VA_ARGS__)
 
-static int cli_id;
+static uuid_t cli_id;
 static int n_sala;
 
 static int q_cli_snd;
@@ -23,7 +23,7 @@ void salir() {
 }
 
 void alarm_handler(int signal) {
-	CINE_LOG("Session time expired for client %i\n", cli_id);
+	CINE_LOG("Session time expired for client %li\n", cli_id);
 	mensaje_t msg, dummyMsg;
 	msg.mtype = cli_id;
 	msg.tipo = TIMEOUT;
@@ -77,8 +77,8 @@ int main(int argc, char *argv[]) {
 	sigemptyset(&sigalarm.sa_mask);
 	sigaction(SIGALRM, &sigalarm, NULL);
 
-	cli_id = atoi(argv[1]);
-	CINE_LOG("Iniciado proceso para cliente [%i]\n", cli_id);
+	cli_id = std::atol(argv[1]);
+	CINE_LOG("Iniciado proceso para cliente [%li]\n", cli_id);
 
 	q_cli_snd = msg_queue_get(Q_CINE_CLI_B);
 	q_cli_rcv = msg_queue_get(Q_CLI_CINE_B);

@@ -1,10 +1,12 @@
 #ifndef COMMON_OPERACIONES_H_
 #define COMMON_OPERACIONES_H_
 
+#include <sys/types.h>
+
 #include "constantes.h"
 
 struct op_login_t {
-	int cli_id;
+	uuid_t cli_id;
 };
 
 struct op_info_salas_t {
@@ -54,8 +56,20 @@ struct op_reserva_cancelada_t {
 };
 
 struct op_timeout_t {
-	int cli_id;
+	uuid_t cli_id;
 	int n_sala;
+};
+
+struct op_mom_init_t {
+	pid_t cli_pid;
+};
+
+struct op_mom_init_reply_t {
+	uuid_t cli_id;
+};
+
+struct op_mom_destroy_t {
+	uuid_t cli_id;
 };
 
 #endif /* COMMON_OPERACIONES_H_ */

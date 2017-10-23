@@ -3,16 +3,17 @@
 
 #include "../operaciones.h"
 
+// OJO: 0 no es valido para ftok!
 typedef enum {
-	Q_CINE_CLI_A,
-	Q_CLI_CINE_A,
-	Q_CINE_CLI_B,
-	Q_CLI_CINE_B,
-	Q_ADMIN_CINE,
-	Q_CINE_ADMIN,
-	Q_ADMIN_CLI,
-	Q_CLI_MOM,
-	Q_MOM_CLI    // Para CINE y ADMIN, el CLI en realidad es el MOM, pero ellos no saben
+	Q_CINE_CLI_A = 1,	// socket_adapter_cli -> mom
+	Q_CLI_CINE_A,		// mom -> socket_adapter_cli
+	Q_CINE_CLI_B,		// cine -> socket_adapter_cine
+	Q_CLI_CINE_B,		// socket_adapter_cine -> cine
+	Q_ADMIN_CINE,		// admin -> cine
+	Q_CINE_ADMIN,		// cine -> admin
+	Q_CLI_MOM,			// cliente -> mom
+	Q_MOM_CLI,			// mom -> cliente
+	Q_ADMIN_CLI			// admin -> cli (borrar?)
 } msg_queue_direction;
 
 /* Estructura de mensaje unico, usado por el sistema */
@@ -32,6 +33,9 @@ typedef struct {
     	op_pago_ok_t pago_ok;
     	op_reserva_cancelada_t reserva_cancelada;
     	op_timeout_t timeout;
+    	op_mom_init_t mom_init;
+    	op_mom_init_reply_t mom_init_reply;
+    	op_mom_destroy_t mom_destroy;
     } op;
 } mensaje_t;
 

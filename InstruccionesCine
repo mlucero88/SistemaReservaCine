@@ -1,30 +1,21 @@
 **** COMPILACION ****
 $chmod u+x compilar.sh
-$./compilar.sh
+$./compilar.sh cine
 
 
 **** ESTABLECER ENTORNO (IPCs) -> Puede ejecutarse desde cualquier ruta ****
-$bin/environment --start
-
-
-**** EJECUTAR MOM -> Puede ejecutarse desde cualquier ruta ****
-$bin/mom
-
-Para detenerlo, enviarle SIGINT (Ctrl+C)
+$bin/environment --start cine
 
 
 **** EJECUTAR CINE -> Solo ejecutar desde carpeta bin ****
 $cd bin
-$./cine_login
+$./cine_login <serv_port>
+
+*serv_port: puerto del servidor del cine
 
 Para detenerlo, enviarle SIGINT (Ctrl+C)
 Se recomienda liberar y establecer el entorno entre cada ejecución de cine_login por si quedan mensajes en la cola al cerrar el cine_login.
 
 
-**** EJECUTAR CLIENTE/S -> Solo ejecutar desde carpeta bin ****
-$cd bin
-$./cliente
-
-
 **** LIBERAR ENTORNO (IPCs) -> Puede ejecutarse desde cualquier ruta ****
-$bin/environment --stop
+$bin/environment --stop cine

@@ -12,7 +12,7 @@ set(MOM_FILES src/mom/mom.cpp)
 set(CINE_FILES src/cine/cine.cpp)
 set(CINE_LOGIN_FILES src/cine_login/cine_login.cpp)
 set(ENVIRONMENT_FILES src/environment/environment.cpp)
-set(COMMON_FILES src/common/ipc/msg_queue.cpp src/common/ipc/sh_mem.cpp)
+set(COMMON_FILES src/common/ipc/msg_queue.cpp src/common/ipc/sh_mem.cpp src/common/ipc/sock.cpp)
 
 find_package (Threads)
 

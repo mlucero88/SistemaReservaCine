@@ -1,0 +1,17 @@
+- Notificacion del admin a los clientes cuando hay update de una sala (hacer socket aparte? buscar forma)
+
+- Hacer cambio de endianness en las funciones send y recv del socket
+
+- No tenemos logica de reconexion en el cliente. Igual para esta entrega no la vamos a hacer, y probablemente nunca la hagamos, pero tener en cuenta q falta eso.
+
+- Hay bugs en el MOM por la forma q forwardea. Puede colgarse, especialmente si hay timeouts. Ejemplo explicado asi nomas:
+Tengo CLI_1 y CLI_2 en la misma PC hablando con el mom. En el ciclo del mom pasa esto
+while(..) {
+	// leo pedido CLI_2 (aca se lee siempre el sig mensaje en la cola, mtype=0)
+	// lo mando a la cola del socket_adapter
+	// recibo mensaje siguiente (mtype=0) de la cola del socket_adapter. Es un timeout para CLI_1
+	// mando timeout a CLI_1. Fin de iteracion
+}
+El CLI_1 se cierra al ver el timeout y cierra el mom. El mom en la sig iteracion ve el msg de cierre y cierra el adapter y vuelve al ppio del while, esperando
+un mensaje de la interfaz. Pero solo está el CLI_2, que ya mandó un msg y está esperado la rta, pero el mom no la desencola de la cola del adapter xq está bloqueado
+en la cola de la interfaz.

@@ -47,6 +47,15 @@ static inline const char *strOpType(int opType) {
         case TIMEOUT: {
             return "TIMEOUT";
         }
+        case MOM_INIT: {
+            return "MOM_INIT";
+        }
+        case MOM_INIT_REPLY: {
+            return "MOM_INIT_REPLY";
+        }
+        case MOM_DESTROY: {
+            return "MOM_DESTROY";
+        }
         default: {
             break;
         }

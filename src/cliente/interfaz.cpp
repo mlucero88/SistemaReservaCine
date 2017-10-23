@@ -51,7 +51,8 @@ static int _recibir_msj(long cli_id, mensaje_t &msg, int tipo) {
 	INT_PRINTF("Esperando mensaje\n");
 	if (!msg_queue_receive(q_mom_rcv, cli_id, &msg)) {
 		return ERR_MSGRECV;
-	}INT_PRINTF("Mensaje recibido\n");
+	}
+	INT_PRINTF("Mensaje recibido\n");
 
 	if (msg.tipo != tipo) {
 		if (msg.tipo == TIMEOUT) {
@@ -59,14 +60,15 @@ static int _recibir_msj(long cli_id, mensaje_t &msg, int tipo) {
 			return ERR_TIMEOUT;
 		}
 		else {
-			INT_PRINTF("Quería %s, recibí %s\n", strOpType(tipo), strOpType(msg.tipo));INT_PRINTF("No deberia entrar nunca aca!!\n");
+			INT_PRINTF("Quería %s, recibí %s\n", strOpType(tipo), strOpType(msg.tipo));
+			INT_PRINTF("No deberia entrar nunca aca!!\n");
 			std::abort();
 		}
 	}
 	return RET_OK;
 }
 
-m_id m_init() {
+uuid_t m_init() {
 	if (cli_state != NOT_INIT) {
 		m_errno = ERR_OPINVALID;
 		return -1;
@@ -80,15 +82,29 @@ m_id m_init() {
 		m_errno = ERR_QUEUEGET;
 	}
 
-	/* todo crear id de otra forma (q no sea 1 xq es para el mtype de LOGIN) */
-	m_id cli_id = getpid();
+	int ret, cli_pid = getpid();
+	mensaje_t msg = { .mtype = cli_pid, .tipo = MOM_INIT };	// El msgtype aca es indiferente xq el mom desencola por orden
+	msg.op.mom_init.cli_pid = cli_pid;
 
-	cli_state = INIT;
-	m_errno = RET_OK;
-	return cli_id;
+	if ((ret = _enviar_msj(msg)) == RET_OK) {
+		INT_PRINTF("Se envió MOM_INIT ok\n");
+		if ((ret = _recibir_msj(cli_pid, msg, MOM_INIT_REPLY)) == RET_OK) {
+			if(msg.op.mom_init_reply.cli_id > 0) {
+				cli_state = INIT;
+				m_errno = RET_OK;
+				return msg.op.mom_init_reply.cli_id;
+			}
+			else {
+				ret = ERR_CLIID;
+			}
+		}
+	}
+
+	m_errno = ret;
+	return -1;
 }
 
-void m_dest(m_id cli_id) {
+void m_dest(uuid_t cli_id) {
 	if (cli_state != NOT_INIT) {
 		if (notification_thread.joinable()) {
 			/* Si hubo un timeout antes de confirmar la reserva, tengo q desbloquear el thread desde aca */
@@ -97,7 +113,18 @@ void m_dest(m_id cli_id) {
 			}
 			notification_thread.join();
 		}
+
+		mensaje_t msg = { .mtype = cli_id, .tipo = MOM_DESTROY };	// El msgtype aca es indiferente xq el mom desencola por orden
+		msg.op.mom_destroy.cli_id = cli_id;
+
+		if (_enviar_msj(msg) == RET_OK) {
+			INT_PRINTF("Se envió MOM_DESTROY ok\n");
+		}
+		else {
+			INT_PRINTF("Falló MOM_DESTROY\n");
+		}
 	}
+
 	/* Reinicializo */
 	cli_state = NOT_INIT;
 	_sala = -1;
@@ -106,14 +133,14 @@ void m_dest(m_id cli_id) {
 	m_errno = RET_OK;
 }
 
-op_info_salas_t m_login(m_id cli_id) {
+op_info_salas_t m_login(uuid_t cli_id) {
 	if (cli_state != INIT) {
 		m_errno = ERR_OPINVALID;
 		return op_info_salas_t { };
 	}
 
 	int ret;
-	mensaje_t msg = { .mtype = LOGIN_MSG_TYPE, .tipo = LOGIN };
+	mensaje_t msg = { .mtype = cli_id, .tipo = LOGIN };
 	msg.op.login.cli_id = cli_id;
 
 	if ((ret = _enviar_msj(msg)) == RET_OK) {
@@ -129,7 +156,7 @@ op_info_salas_t m_login(m_id cli_id) {
 	return op_info_salas_t { };
 }
 
-op_info_asientos_t m_seleccionar_sala(m_id cli_id, int nro_sala) {
+op_info_asientos_t m_seleccionar_sala(uuid_t cli_id, int nro_sala) {
 	if (cli_state != CINE_LOGIN) {
 		m_errno = ERR_OPINVALID;
 		return op_info_asientos_t { };
@@ -163,7 +190,7 @@ op_info_asientos_t m_seleccionar_sala(m_id cli_id, int nro_sala) {
 	return op_info_asientos_t { };
 }
 
-op_info_reserva_t m_seleccionar_asientos(m_id cli_id, int asientos[MAX_ASIENTOS_RESERVADOS], int n_asientos) {
+op_info_reserva_t m_seleccionar_asientos(uuid_t cli_id, int asientos[MAX_ASIENTOS_RESERVADOS], int n_asientos) {
 	if (cli_state != SELECCION_SALA) {
 		m_errno = ERR_OPINVALID;
 		return op_info_reserva_t { };
@@ -190,7 +217,7 @@ op_info_reserva_t m_seleccionar_asientos(m_id cli_id, int asientos[MAX_ASIENTOS_
 	return op_info_reserva_t { };
 }
 
-op_info_pago_t m_confirmar_reserva(m_id cli_id, bool aceptar) {
+op_info_pago_t m_confirmar_reserva(uuid_t cli_id, bool aceptar) {
 	if (cli_state != SELECCION_ASIENTOS) {
 		m_errno = ERR_OPINVALID;
 		return op_info_pago_t { };
@@ -223,7 +250,7 @@ op_info_pago_t m_confirmar_reserva(m_id cli_id, bool aceptar) {
 	return op_info_pago_t { };
 }
 
-void m_pagar(m_id cli_id, int pago) {
+void m_pagar(uuid_t cli_id, int pago) {
 	if (cli_state != CONFIRMACION_RESERVA) {
 		m_errno = ERR_OPINVALID;
 		return;
@@ -244,7 +271,7 @@ void m_pagar(m_id cli_id, int pago) {
 	m_errno = ret;
 }
 
-void m_reg_cb_actualizacion_sala(m_id cli_id, std::function<void(const op_info_asientos_t&)> handler) {
+void m_reg_cb_actualizacion_sala(uuid_t cli_id, std::function<void(const op_info_asientos_t&)> handler) {
 	if(cli_state != NOT_INIT) {
 		fn = std::move(handler);
 		m_errno = RET_OK;

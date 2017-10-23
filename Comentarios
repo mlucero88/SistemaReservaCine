@@ -1,0 +1,9 @@
+**** UUID ****
+Las librerias de uuid generan ids de 128 bits, pero nosotros necesitamos ids de 64 bits
+positivos, ya que los msgtype son long positivos, por lo que la cantidad de bits efectivos
+son 63 (el MSbit debe ser 0). Para evitar usar pseudo-generators, decidimos utilizar la
+mac-address (48 bits) concatenada con el pid (cuya cantidad maxima configurada en el SO por
+defecto es 32768 - cat /proc/sys/kernel/pid_max - que cabe en 15 bits) y seteando un 0
+como bit mas significativo.
+Sabemos que no es una generacion eficaz, pero es lo mejor que se nos ocurrio utilizando
+63 bits, y sin un ticket server

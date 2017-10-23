@@ -1,0 +1,26 @@
+**** COMPILACION ****
+$chmod u+x compilar.sh
+$./compilar.sh cliente
+
+
+**** ESTABLECER ENTORNO (IPCs) -> Puede ejecutarse desde cualquier ruta ****
+$bin/environment --start cliente
+
+
+**** EJECUTAR MOM () -> Puede ejecutarse desde cualquier ruta ****
+$bin/mom <ifname> <serv_addr> <serv_port>
+
+*ifname: nombre de la interfaz de red (generalmente eth0). Se puede consultar con el comando ifconfig
+*serv_addr: direccion ip en dotted-decimal notation del servidor del cine
+*serv_port: puerto del servidor del cine
+
+Para detenerlo, enviarle SIGINT (Ctrl+C). El mom es único para todos los clientes en la misma PC.
+
+
+**** EJECUTAR CLIENTE/S -> Solo ejecutar desde carpeta bin ****
+$cd bin
+$./cliente
+
+
+**** LIBERAR ENTORNO (IPCs) -> Puede ejecutarse desde cualquier ruta ****
+$bin/environment --stop cliente
