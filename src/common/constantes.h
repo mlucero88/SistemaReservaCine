@@ -27,7 +27,7 @@
 #define DISPONIBLE 0 // El asiento se puede reservar
 #define RESERVADO 1 // El asiento ya está reservado
 
-#define TIMEOUT_VAL 3000 // Timeout de la sesión de un cliente (lo subo xq no me da tiempo a probar)
+#define TIMEOUT_VAL 30 // Timeout de la sesión de un cliente (lo subo xq no me da tiempo a probar)
 
 #define MAX_SALAS 5
 #define MAX_ASIENTOS 15

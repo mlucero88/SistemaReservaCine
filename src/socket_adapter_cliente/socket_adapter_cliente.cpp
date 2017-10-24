@@ -89,7 +89,8 @@ int main(int argc, char *argv[]) {
 
         int bytesRec =  sock_recv(sock_id, &msg);
         if (bytesRec == 0) {
-        	// Desconexion del peer
+        	// Desconexion del peer. El cine no deberia iniciar un cierre
+        	SOCK_CLI_LOG_DEBUG("Socket remoto cerrado (no deberia entrar aca)\n");
             salir();
         }
         else if (bytesRec != sizeof(msg)) {

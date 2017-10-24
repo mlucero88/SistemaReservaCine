@@ -145,17 +145,9 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 			default: {
-				/* Cuando hay timeout y nos avisa el cine (lo leo en el siguiente receive), este send deja en la cola un mensaje q el cine no lo lee xq se cerró */
+				uuid_t cli_id = msg.mtype;
 				msg_queue_send(q_adapter_snd, &msg);
-				msg_queue_receive(q_adapter_rcv, 0, &msg);
-
-				/* Parche para arreglar esto */
-				if (msg.tipo == TIMEOUT) {
-					mensaje_t dummy;
-					msg_queue_receive(q_adapter_snd, msg.mtype, &dummy, IPC_NOWAIT);
-				}
-				/* Fin parche */
-
+				msg_queue_receive(q_adapter_rcv, cli_id, &msg);
 				MOM_LOG("Envío respuesta %s al cliente %li\n", strOpType(msg.tipo), msg.mtype);
 				msg_queue_send(q_cli_snd, &msg);
 				break;

@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cerrno>
 #include <cstring>
+#include <sys/ipc.h>
 
 #include "../common/color_print.h"
 #include "../common/ipc/msg_queue.h"
@@ -78,6 +79,7 @@ int main(int argc, char *argv[]) {
 
             mensaje_t msg;
             uuid_t cli_id = -1;
+            bool timeoutReached = false;
 
             // Se cierra cuando detecta desconexion del peer
         	while (true) {
@@ -87,6 +89,10 @@ int main(int argc, char *argv[]) {
         			close(new_sock_id);
         			SOCK_CINE_HIJO_LOG("Proceso finalizado\n");
         			exit(0);
+        		}
+        		else if (timeoutReached) {
+        			// Si hubo timeout, descarto paquetes del cliente y sigo haciendo recv hasta leer el close
+        			continue;
         		}
         		else if (bytesRec != sizeof(msg)) {
         			SOCK_CINE_HIJO_LOG("Error al recibir mensaje del cliente - %s\n", std::strerror(errno));
@@ -115,6 +121,12 @@ int main(int argc, char *argv[]) {
 
         			msg_queue_receive(q_cine_rcv, cli_id, &msg);
         			SOCK_CINE_HIJO_LOG_DEBUG("Recibí respuesta %s del cine\n", strOpType(msg.tipo));
+        			// Si es timeout, desencolo el send anterior ya que el cine para ese cliente se cerró.
+        			if (msg.tipo == TIMEOUT) {
+        				mensaje_t dummy;
+        				msg_queue_receive(q_cine_snd, msg.mtype, &dummy, IPC_NOWAIT);
+        				timeoutReached = true;
+        			}
 
         			if (sock_send(new_sock_id, &msg) != sizeof(msg)) {
         				SOCK_CINE_LOG("Error al enviar mensaje al cliente - %s\n", std::strerror(errno));
