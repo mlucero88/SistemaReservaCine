@@ -49,6 +49,7 @@ void forward_msg(int tipo) {
 		if (msg_queue_send(q_admin_snd, &msg)) {
 			CINE_LOG("Esperando respuesta del admin para %s\n", strOpType(tipo));
 			if (msg_queue_receive(q_admin_rcv, cli_id, &msg)) {
+				CINE_LOG("Recibí respuesta del admin para %s\n", strOpType(tipo));
 				if (msg_queue_send(q_cli_snd, &msg)) {
 					if (msg.tipo == RESERVA_CANCELADA) {
 						salir();
@@ -102,6 +103,8 @@ int main(int argc, char *argv[]) {
 	if (msg_queue_send(q_admin_snd, &msg)) {
 		CINE_LOG("Esperando respuesta del admin para INFORMAR_SALAS\n");
 		if (msg_queue_receive(q_admin_rcv, cli_id, &msg)) {
+			CINE_LOG("Cli id %ld\n", cli_id);
+			CINE_LOG("Listo!\n");
 			msg_queue_send(q_cli_snd, &msg);
 		}
 	}

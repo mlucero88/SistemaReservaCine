@@ -50,8 +50,8 @@ int main(int argc, char *argv[]) {
 
     int q_mom_snd = msg_queue_get(Q_CINE_CLI_A);
     int q_mom_rcv = msg_queue_get(Q_CLI_CINE_A);
-
-    if (q_mom_snd == -1 || q_mom_rcv == -1) {
+    int q_admin_rcv = msg_queue_get(Q_ADMIN_CLI_A);
+    if (q_mom_snd == -1 || q_mom_rcv == -1 || q_admin_rcv == -1) {
     	SOCK_CLI_LOG("Error al crear canal de comunicacion entre socket_adapter y mom\n");
         salir();
     }
@@ -102,11 +102,18 @@ int main(int argc, char *argv[]) {
                 continue;
             }
             SOCK_CLI_LOG_DEBUG("CCC Recibí respuesta %s del cine\n", strOpType(msg.tipo));
+            // Si es una respuesta del cine, mandar a la cola común
 
-            msg_queue_send(q_mom_snd, &msg);
+            if (msg.tipo == NOTIFICAR_CAMBIOS) {
+                // Si es una notificacion del admin, mandar el mensaje a la cola de notificaciones
+                SOCK_CLI_LOG_DEBUG("############ RECIBI NOTIFICACION %s\n", strOpType(msg.tipo));
+                msg_queue_send(q_admin_rcv, &msg);
+            } else {
+                msg_queue_send(q_mom_snd, &msg);
+            }
+
             SOCK_CLI_LOG_DEBUG("Envié respuesta %s al cliente\n", strOpType(msg.tipo));
         }
 
     }
-    return 0;
 }

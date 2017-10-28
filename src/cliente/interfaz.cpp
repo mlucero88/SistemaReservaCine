@@ -1,6 +1,5 @@
 #include <thread>
 #include <atomic>
-#include <cstdlib>
 #include <csignal>
 #include <cstring>
 
@@ -76,7 +75,7 @@ uuid_t m_init() {
 
 	q_mom_snd = msg_queue_get(Q_CLI_MOM);
 	q_mom_rcv = msg_queue_get(Q_MOM_CLI);
-	q_admin_rcv = msg_queue_get(Q_ADMIN_CLI);
+	q_admin_rcv = msg_queue_get(Q_ADMIN_CLI_A);
 
 	if (q_mom_snd == -1 || q_mom_rcv == -1 || q_admin_rcv == -1) {
 		m_errno = ERR_QUEUEGET;
@@ -173,7 +172,7 @@ op_info_asientos_t m_seleccionar_sala(uuid_t cli_id, int nro_sala) {
 				signal(SIGUSR1, thr_sig_handler);
 				while (!quit_thread_loop) {
 					mensaje_t m;
-					if (msg_queue_receive(q_admin_rcv, cli_id, &m) && m.tipo == INFORMAR_ASIENTOS && fn) {
+					if (msg_queue_receive(q_admin_rcv, cli_id, &m) && m.tipo == NOTIFICAR_CAMBIOS && fn) {
 						fn(m.op.info_asientos);
 					}
 				}

@@ -22,6 +22,7 @@
 #define MOM_INIT 13
 #define MOM_INIT_REPLY 14
 #define MOM_DESTROY 15
+#define NOTIFICAR_CAMBIOS 16
 
 #define NO_DISPONIBLE (-1) // El asiento no existe en la sala
 #define DISPONIBLE 0 // El asiento se puede reservar

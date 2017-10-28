@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
 				std::cerr << "Error al crear msg_q MOM_CLI: " << strerror(errno) << std::endl;
 				success = false;
 			}
-			if (msg_queue_create(Q_ADMIN_CLI) == -1) {
+			if (msg_queue_create(Q_ADMIN_CLI_A) == -1) {
 				std::cerr << "Error al crear msg_q ADMIN_CLI: " << strerror(errno) << std::endl;
 				success = false;
 			}
@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
 				std::cerr << "Error al crear msg_q CINE_ADMIN: " << strerror(errno) << std::endl;
 				success = false;
 			}
-			if (msg_queue_create(Q_ADMIN_CLI) == -1) {
+			if (msg_queue_create(Q_ADMIN_CLI_B) == -1) {
 				std::cerr << "Error al crear msg_q ADMIN_CLI: " << strerror(errno) << std::endl;
 				success = false;
 			}
@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
 			msg_queue_destroy(msg_queue_get(Q_CLI_CINE_A));
 			msg_queue_destroy(msg_queue_get(Q_CLI_MOM));
 			msg_queue_destroy(msg_queue_get(Q_MOM_CLI));
-			msg_queue_destroy(msg_queue_get(Q_ADMIN_CLI));
+			msg_queue_destroy(msg_queue_get(Q_ADMIN_CLI_A));
 
 			std::cout << "Se liberaron todos los IPC del cliente" << std::endl;
 			return 0;
@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
 			msg_queue_destroy(msg_queue_get(Q_CLI_CINE_B));
 			msg_queue_destroy(msg_queue_get(Q_ADMIN_CINE));
 			msg_queue_destroy(msg_queue_get(Q_CINE_ADMIN));
-			msg_queue_destroy(msg_queue_get(Q_ADMIN_CLI));
+			msg_queue_destroy(msg_queue_get(Q_ADMIN_CLI_B));
 
 			std::cout << "Se liberaron todos los IPC del cine" << std::endl;
 			return 0;

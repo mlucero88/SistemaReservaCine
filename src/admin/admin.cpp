@@ -41,7 +41,7 @@ void notificar_clientes(int q_admin_cliente, int nro_sala, int asientos_salas[MA
                         int n_asientos_salas[MAX_SALAS], uuid_t salas_clientes[MAX_SALAS][MAX_CLIENTES], uuid_t cli_id_filter = 0) {
     // Si se pudo reservar/liberar alguno de los asientos, les aviso a los clientes que estaban mirando esa sala
     mensaje_t msg;
-    msg.tipo = INFORMAR_ASIENTOS;
+    msg.tipo = NOTIFICAR_CAMBIOS;
     msg.op.info_asientos.nro_sala = nro_sala;
     msg.op.info_asientos.cant_asientos = n_asientos_salas[nro_sala];
     memcpy(msg.op.info_asientos.asiento_habilitado, asientos_salas[nro_sala], MAX_ASIENTOS * sizeof(int));
@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
     }
 
 
-    int q_cliente_snd = msg_queue_get(Q_ADMIN_CLI);
+    int q_cliente_snd = msg_queue_get(Q_ADMIN_CLI_B);
     if (q_cliente_snd == -1) {
     	ADMIN_LOG("Error al crear canal de comunicacion entre admin y cliente\n");
         salir();
@@ -134,6 +134,7 @@ int main(int argc, char *argv[]) {
     	ADMIN_LOG("Esperando mensaje...\n");
 
     	if (msg_queue_receive(q_cine_rcv, 0, &msg)) {
+            ADMIN_LOG("Recibí!!! mensaje...\n");
     		cli_id = msg.mtype;
 
     		switch(msg.tipo) {

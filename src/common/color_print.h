@@ -56,6 +56,9 @@ static inline const char *strOpType(int opType) {
         case MOM_DESTROY: {
             return "MOM_DESTROY";
         }
+        case NOTIFICAR_CAMBIOS: {
+            return "NOTIFICAR_CAMBIOS";
+        }
         default: {
             break;
         }
