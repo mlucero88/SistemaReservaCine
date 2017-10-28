@@ -2,7 +2,6 @@
 #include <cstdlib>
 #include <string>
 #include <cstring>
-#include <cerrno>
 
 #include "../common/color_print.h"
 #include "../common/ipc/msg_queue.h"
@@ -70,38 +69,44 @@ int main(int argc, char *argv[]) {
     SOCK_CLI_LOG("Conexion a %s:%hu establecida\n", serv_addr, serv_port);
 
     mensaje_t msg;
-    while (true) {
-        msg_queue_receive(q_mom_rcv, cli_id, &msg);
-        SOCK_CLI_LOG_DEBUG("Recibí pedido %s del cliente\n", strOpType(msg.tipo));
+    if (fork() == 0) {
+        // Proceso que envía
+        while (true) {
+            msg_queue_receive(q_mom_rcv, cli_id, &msg);
+            SOCK_CLI_LOG_DEBUG("EEE Recibí pedido %s del cliente\n", strOpType(msg.tipo));
 
-        /* Esto tengo que ponerlo aca, aunque esta logica no deberia pertenecer al adapter.
-         * Pero si me viniese el mtype=LOGIN_MSG_TYPE desde el mom, el adapter no lo recibiria nunca */
-        if(msg.tipo == LOGIN) {
-        	msg.mtype = LOGIN_MSG_TYPE;
-        }
+            /* Esto tengo que ponerlo aca, aunque esta logica no deberia pertenecer al adapter.
+             * Pero si me viniese el mtype=LOGIN_MSG_TYPE desde el mom, el adapter no lo recibiria nunca */
+            if (msg.tipo == LOGIN) {
+                msg.mtype = LOGIN_MSG_TYPE;
+            }
 
-        if (sock_send(sock_id, &msg) != sizeof(msg)) {
-        	SOCK_CLI_LOG("Error al enviar mensaje al cine - %s\n", std::strerror(errno));
+            if (sock_send(sock_id, &msg) != sizeof(msg)) {
+                SOCK_CLI_LOG("Error al enviar mensaje al cine - %s\n", std::strerror(errno));
 //          salir();
-        	continue;
+                continue;
+            }
+            SOCK_CLI_LOG_DEBUG("Envié pedido %s al cine\n", strOpType(msg.tipo));
         }
-        SOCK_CLI_LOG_DEBUG("Envié pedido %s al cine\n", strOpType(msg.tipo));
 
-        int bytesRec =  sock_recv(sock_id, &msg);
-        if (bytesRec == 0) {
-        	// Desconexion del peer
-            salir();
-        }
-        else if (bytesRec != sizeof(msg)) {
-        	SOCK_CLI_LOG("Error al recibir mensaje del cine - %s\n", std::strerror(errno));
+    } else {
+        // Proceso que recibe
+        while (true) {
+            int bytesRec = sock_recv(sock_id, &msg);
+            if (bytesRec == 0) {
+                // Desconexion del peer
+                salir();
+            } else if (bytesRec != sizeof(msg)) {
+                SOCK_CLI_LOG("Error al recibir mensaje del cine - %s\n", std::strerror(errno));
 //          salir();
-        	continue;
-        }
-        SOCK_CLI_LOG_DEBUG("Recibí respuesta %s del cine\n", strOpType(msg.tipo));
+                continue;
+            }
+            SOCK_CLI_LOG_DEBUG("CCC Recibí respuesta %s del cine\n", strOpType(msg.tipo));
 
-        msg_queue_send(q_mom_snd, &msg);
-        SOCK_CLI_LOG_DEBUG("Envié respuesta %s al cliente\n", strOpType(msg.tipo));
+            msg_queue_send(q_mom_snd, &msg);
+            SOCK_CLI_LOG_DEBUG("Envié respuesta %s al cliente\n", strOpType(msg.tipo));
+        }
+
     }
-
     return 0;
 }
