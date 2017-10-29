@@ -7,36 +7,46 @@
 #include "../common/ipc/msg_queue.h"
 #include "../common/ipc/sock.h"
 
-#define ARG_PORT_ADDR    1
-#define N_ARGS            2
+#define ARG_SOCKET	1
+#define N_ARGS		2
 
-#define SOCK_CINE_LOG(fmt, ...) FPRINTF(stdout, KCYN, fmt, ##__VA_ARGS__)
-#define SOCK_CINE_HIJO_LOG(fmt, ...) FPRINTF(stdout, KMAG, "[ADAPTER_%i] " fmt, getpid() , ##__VA_ARGS__)
+#define SOCK_CINE_LOG(fmt, ...) FPRINTF(stdout, KMAG, "[ADAPTER_%li] " fmt, cli_id, ##__VA_ARGS__)
+#define SOCK_CINE_SEND_LOG(fmt, ...) FPRINTF(stdout, KMAG, "[ADAPTER_SEND_%li] " fmt, cli_id, ##__VA_ARGS__)
+#define SOCK_CINE_RECV_LOG(fmt, ...) FPRINTF(stdout, KMAG, "[ADAPTER_RECV_%li] " fmt, cli_id, ##__VA_ARGS__)
 
-#define _DEBUG
-#ifdef _DEBUG
-#define SOCK_CINE_HIJO_LOG_DEBUG(fmt, ...) FPRINTF(stdout, KMAG, "[ADAPTER_%i] " fmt, getpid() , ##__VA_ARGS__)
-#else
-#define SOCK_CINE_HIJO_LOG_DEBUG(fmt, ...)
-#endif
-
-static int sock_id = -1;
+static int socket_id = -1;
+static uuid_t cli_id = -1;
+static pid_t admin_rcv_pid = -1;
+static pid_t cine_rcv_pid = -1;
+static bool timeoutReached = false;
 
 void salir() {
-    if (sock_id > 0) {
-        close(sock_id);
+	if (admin_rcv_pid > 0) {
+		kill(admin_rcv_pid, SIGTERM);
+	}
+	if (cine_rcv_pid > 0) {
+		kill(cine_rcv_pid, SIGTERM);
+	}
+    if (socket_id > 0) {
+        close(socket_id);
     }
     SOCK_CINE_LOG("Proceso finalizado\n");
     exit(0);
 }
 
 void handler(int signal) {
-    salir();
+	if (signal == SIGUSR2) {
+		timeoutReached = true;
+		SOCK_CINE_RECV_LOG("Timeout! Descartando paquetes hasta cierre del cliente\n");
+	}
+	else {
+		salir();
+	}
 }
 
 int main(int argc, char *argv[]) {
     if (argc < N_ARGS) {
-        SOCK_CINE_LOG("Uso: %s <serv_port>\n", argv[0]);
+    	SOCK_CINE_LOG("Uso: %s <socket_id>\n", argv[0]);
         exit(1);
     }
 
@@ -45,116 +55,96 @@ int main(int argc, char *argv[]) {
     sigchld.sa_flags = SA_NOCLDWAIT;
     sigemptyset(&sigchld.sa_mask);
     sigaction(SIGCHLD, &sigchld, NULL);
+    signal(SIGINT, handler);
     signal(SIGUSR2, handler);
-
-    uint16_t serv_port = std::atoi(argv[ARG_PORT_ADDR]);
+    socket_id = std::atoi(argv[ARG_SOCKET]);
     int q_cine_snd = msg_queue_get(Q_CLI_CINE_B);
     int q_cine_rcv = msg_queue_get(Q_CINE_CLI_B);
-
     int q_admin_cli = msg_queue_get(Q_ADMIN_CLI_B);
 
     if (q_cine_snd == -1 || q_cine_rcv == -1 || q_admin_cli == -1) {
-        SOCK_CINE_LOG("Error al crear canal de comunicacion entre socket_adapter y cine\n");
+    	SOCK_CINE_LOG("Error al crear canal de comunicacion entre socket_adapter y cine\n");
         salir();
     }
 
-    sock_id = sock_create();
-    if (sock_id == -1 || sock_bind(sock_id, serv_port) != 0 || sock_listen(sock_id, MAX_CLIENTES) != 0) {
-        SOCK_CINE_LOG("Error al crear el socket servidor del cine\n");
-        salir();
-    }
+    mensaje_t msg;
 
-
+    // Se cierra cuando detecta desconexion del peer
     while (true) {
-        int new_sock_id = sock_accept(sock_id);
-        if (new_sock_id == -1) {
-            SOCK_CINE_LOG("Error al aceptar conexión\n");
-            continue;
-        }
+    	int bytesRec = sock_recv(socket_id, &msg);
+    	if (bytesRec == 0) {
+    		// Desconexion del peer
+    		close(socket_id);
+    		salir();
+    	} else if (timeoutReached) {
+    		// Si hubo timeout, descarto paquetes del cliente y sigo haciendo recv hasta leer el close
+    		SOCK_CINE_RECV_LOG("Paquete descartado\n");
 
-        pid_t connection_pid = fork();
-        if (connection_pid == -1) {
-            SOCK_CINE_LOG("Falló el fork del hijo socket_adapter\n");
-        }
-        if (connection_pid == 0) {
-            close(sock_id);
+    		continue;
+    	} else if (bytesRec != sizeof(msg)) {
+    		SOCK_CINE_RECV_LOG("Error al recibir mensaje del cliente - %s\n", std::strerror(errno));
+    		continue;
+    	}
 
-            mensaje_t msg;
-            uuid_t cli_id = -1;
+    	if (msg.tipo == LOGIN) {
+    		cli_id = msg.op.login.cli_id;
 
-            // Se cierra cuando detecta desconexion del peer
-            // Proceso que recibe
-            while (true) {
-                int bytesRec = sock_recv(new_sock_id, &msg); // Recibe mensaje del cliente
-                if (bytesRec == 0) {
-                    // Desconexion del peer
-                    close(new_sock_id);
-                    SOCK_CINE_HIJO_LOG("Proceso finalizado\n");
-                    exit(0);
-                } else if (bytesRec != sizeof(msg)) {
-                    SOCK_CINE_HIJO_LOG("Error al recibir mensaje del cliente - %s\n", std::strerror(errno));
-//        			close(new_sock_id);
-//        			exit(1);
-                    continue;
-                }
+    		admin_rcv_pid = fork();
+    		if(admin_rcv_pid == -1) {
+    			SOCK_CINE_LOG("Falló el fork del socket_rcv_admin!\n");
+    			salir();
+    		} else if (admin_rcv_pid == 0) {
+    			// Proceso que recibe NOTIFICACIONES
+    			signal(SIGINT, SIG_IGN);	// Para no cerrarlo con el CTRL+C. Lo cierra el padre
 
-                if (msg.tipo == LOGIN) {
-                    cli_id = msg.op.login.cli_id;
-                    if (fork() == 0) {
-                        if (fork() == 0) {
-                            // Proceso que recibe respuestas del cine
-                            SOCK_CINE_HIJO_LOG_DEBUG("Esperando!!! respuesta del cine para cliente %ld\n", cli_id);
-                            while (true) {
-                                msg_queue_receive(q_cine_rcv, cli_id, &msg);
-                                SOCK_CINE_HIJO_LOG_DEBUG("Recibí respuesta!!! del cine\n");
-                                SOCK_CINE_HIJO_LOG_DEBUG("Recibí respuesta %s del cine\n", strOpType(msg.tipo));
+    			while (true) {
+    				SOCK_CINE_SEND_LOG("Esperando notificaciones del admin...\n");
+    				msg_queue_receive(q_admin_cli, cli_id, &msg);
+    				SOCK_CINE_SEND_LOG("Recibí notificacion %s del admin\n", strOpType(msg.tipo));
 
-                                if (sock_send(new_sock_id, &msg) != sizeof(msg)) {
-                                    SOCK_CINE_LOG("Error al enviar mensaje al cliente - %s\n", std::strerror(errno));
-//            			close(new_sock_id);
-//            			exit(1);
-                                    continue;
-                                }
-                                SOCK_CINE_HIJO_LOG_DEBUG("Envié respuesta %s al cliente\n", strOpType(msg.tipo));
-                            }
-                        } else {
-                            // Proceso que recibe NOTIFICACIONES
-                            SOCK_CINE_HIJO_LOG_DEBUG("Esperando!!! notificacion del cine\n");
-                            while (true) {
-                                msg_queue_receive(q_admin_cli, cli_id, &msg);
-                                SOCK_CINE_HIJO_LOG_DEBUG("Recibí notificacion %s del admin\n", strOpType(msg.tipo));
+    				if (sock_send(socket_id, &msg) != sizeof(msg)) {
+    					SOCK_CINE_SEND_LOG("Error al enviar mensaje al cliente - %s\n", std::strerror(errno));
+    					continue;
+    				}
+    				SOCK_CINE_SEND_LOG("Envié notificación %s al cliente\n", strOpType(msg.tipo));
+    			}
+    		} else {
+    			cine_rcv_pid = fork();
+    			if(cine_rcv_pid == -1) {
+    				SOCK_CINE_LOG("Falló el fork del socker_rcv_cine!\n");
+    				salir();
+    			} else if (cine_rcv_pid == 0) {
+    				// Proceso que recibe respuestas del cine
+    				signal(SIGINT, SIG_IGN);	// Para no cerrarlo con el CTRL+C. Lo cierra el padre
 
-                                if (sock_send(new_sock_id, &msg) != sizeof(msg)) {
-                                    SOCK_CINE_LOG("Error al enviar mensaje al cliente - %s\n", std::strerror(errno));
-//            			close(new_sock_id);
-//            			exit(1);
-                                    continue;
-                                }
-                                SOCK_CINE_HIJO_LOG_DEBUG("Envié %s al cliente\n", strOpType(msg.tipo));
-                            }
-                        }
+    				while (true) {
+    					SOCK_CINE_SEND_LOG("Esperando respuesta del cine...\n");
+    					msg_queue_receive(q_cine_rcv, cli_id, &msg);
+    					SOCK_CINE_SEND_LOG("Recibí respuesta %s del cine\n", strOpType(msg.tipo));
+    					if (msg.tipo == TIMEOUT) {
+    						kill(getppid(), SIGUSR2);
+    					}
 
-                    } else {
-                        SOCK_CINE_HIJO_LOG("Atiendo cliente %li\n", cli_id);
-                    }
-                }
+    					if (sock_send(socket_id, &msg) != sizeof(msg)) {
+    						SOCK_CINE_SEND_LOG("Error al enviar mensaje al cliente - %s\n", std::strerror(errno));
+    						continue;
+    					}
+    					SOCK_CINE_SEND_LOG("Envié respuesta %s al cliente\n", strOpType(msg.tipo));
+    				}
+    			} else {
+    				SOCK_CINE_LOG("Atiendo cliente %li\n", cli_id);
+    			}
+    		}
+    	}
 
-                if (cli_id < 0) {
-                    // Nunca me hizo login y no tengo el cli_id
-                    SOCK_CINE_HIJO_LOG("Cliente no hizo LOGIN - no tengo su uuid\n");
-//        			close(new_sock_id);
-//        			exit(1);
-                    continue;
-                } else {
-                    SOCK_CINE_HIJO_LOG_DEBUG("Recibí pedido %s del cliente\n", strOpType(msg.tipo));
-
-                    msg_queue_send(q_cine_snd, &msg);
-                    SOCK_CINE_HIJO_LOG_DEBUG("Envié pedido %s al cine\n", strOpType(msg.tipo));
-
-                }
-            }
-        }
-
-        close(new_sock_id);
+    	if (cli_id < 0) {
+    		// Nunca me hizo login y no tengo el cli_id
+    		SOCK_CINE_RECV_LOG("Cliente no hizo LOGIN - no tengo su uuid\n");
+    		continue;
+    	} else {
+    		SOCK_CINE_RECV_LOG("Recibí pedido %s del cliente\n", strOpType(msg.tipo));
+    		msg_queue_send(q_cine_snd, &msg);
+    		SOCK_CINE_RECV_LOG("Envié pedido %s al cine\n", strOpType(msg.tipo));
+    	}
     }
 }

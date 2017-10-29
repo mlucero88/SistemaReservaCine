@@ -6,7 +6,7 @@
 #include "../common/color_print.h"
 #include "../common/ipc/msg_queue.h"
 
-#define CINE_LOG(fmt, ...) FPRINTF(stdout, KRED, "[CINE_%i] " fmt, getpid() , ##__VA_ARGS__)
+#define CINE_LOG(fmt, ...) FPRINTF(stdout, KRED, "[CINE_%li] " fmt, cli_id , ##__VA_ARGS__)
 
 static uuid_t cli_id;
 static int n_sala;
@@ -20,6 +20,10 @@ static int q_admin_rcv;
 void salir() {
 	CINE_LOG("Proceso finalizado\n");
 	exit(0);
+}
+
+void handler(int signal) {
+    salir();
 }
 
 void alarm_handler(int signal) {
@@ -77,6 +81,7 @@ int main(int argc, char *argv[]) {
 	sigalarm.sa_handler = alarm_handler;
 	sigemptyset(&sigalarm.sa_mask);
 	sigaction(SIGALRM, &sigalarm, NULL);
+	signal(SIGINT, handler);
 
 	cli_id = std::atol(argv[1]);
 	CINE_LOG("Iniciado proceso para cliente [%li]\n", cli_id);
@@ -103,8 +108,7 @@ int main(int argc, char *argv[]) {
 	if (msg_queue_send(q_admin_snd, &msg)) {
 		CINE_LOG("Esperando respuesta del admin para INFORMAR_SALAS\n");
 		if (msg_queue_receive(q_admin_rcv, cli_id, &msg)) {
-			CINE_LOG("Cli id %ld\n", cli_id);
-			CINE_LOG("Listo!\n");
+			CINE_LOG("Recibí respuesta del admin para INFORMAR_SALAS\n");
 			msg_queue_send(q_cli_snd, &msg);
 		}
 	}

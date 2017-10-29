@@ -27,25 +27,8 @@ struct cli_data {
 
 static std::unordered_map< uuid_t, cli_data > clientes;
 
-/* Para debuguear. Ojo con el endianness al interpretar los hexas impresos en el for
-void imprimir_uuid(uuid_t id) {
-	printf("*******\n");
-	printf("uuid = %li\n", id);
-	uint8_t *p = reinterpret_cast<uint8_t*>(&id);
-	for (int i = 0; i < 8; i++) {
-		printf("%02X ", static_cast<unsigned int>(p[i]));
-	}
-	printf("\n*******\n");
-}
-*/
-
 void salir() {
-	for(const auto& cliPair : clientes) {
-		MOM_LOG("Cerrando adapter %i...\n", cliPair.second.socket_adapter_pid);
-		kill(cliPair.second.socket_adapter_pid, SIGUSR2);
-	}
-
-	MOM_LOG("Proceso finalizado\n");
+	MOM_LOG("MOM finalizado\n");
 	exit(0);
 }
 
@@ -139,23 +122,15 @@ int main(int argc, char *argv[]) {
 			case MOM_DESTROY: {
 				auto it = clientes.find(msg.op.mom_destroy.cli_id);
 				if(it != clientes.cend()) {
-					kill(it->second.socket_adapter_pid, SIGUSR2);
+					kill(it->second.socket_adapter_pid, SIGINT);
 					clientes.erase(msg.op.mom_destroy.cli_id);
 				}
 				break;
 			}
 			default: {
-				/* Cuando hay timeout y nos avisa el cine (lo leo en el siguiente receive), este send deja en la cola un mensaje q el cine no lo lee xq se cerró */
+				uuid_t cli_id = msg.mtype;
 				msg_queue_send(q_adapter_snd, &msg);
-				msg_queue_receive(q_adapter_rcv, 0, &msg);
-
-				/* Parche para arreglar esto */
-				if (msg.tipo == TIMEOUT) {
-					mensaje_t dummy;
-					msg_queue_receive(q_adapter_snd, msg.mtype, &dummy, IPC_NOWAIT);
-				}
-				/* Fin parche */
-
+				msg_queue_receive(q_adapter_rcv, cli_id, &msg);
 				MOM_LOG("Envío respuesta %s al cliente %li\n", strOpType(msg.tipo), msg.mtype);
 				msg_queue_send(q_cli_snd, &msg);
 				break;

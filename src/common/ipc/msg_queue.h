@@ -13,8 +13,8 @@ typedef enum {
 	Q_CINE_ADMIN,		// cine -> admin
 	Q_CLI_MOM,			// cliente -> mom
 	Q_MOM_CLI,			// mom -> cliente
-	Q_ADMIN_CLI_A,            // admin -> cli (borrar?)
-	Q_ADMIN_CLI_B            // admin -> cli (borrar?)
+	Q_ADMIN_CLI_A,		// socket_adapter_cli -> mom
+	Q_ADMIN_CLI_B		// admin -> socket_adapter_cine
 } msg_queue_direction;
 
 /* Estructura de mensaje unico, usado por el sistema */

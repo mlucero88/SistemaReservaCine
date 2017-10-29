@@ -11,23 +11,25 @@
 #define CINE_LOG(fmt, ...) FPRINTF(stdout, KYEL, fmt, ##__VA_ARGS__)
 
 static pid_t admin_pid = -1;
-static pid_t adapter_pid = -1;
+static pid_t adapter_server_pid = -1;
 
 void salir() {
 	if (admin_pid > 0) {
 		CINE_LOG("Cerrando ADMIN...\n");
-		kill(admin_pid, SIGUSR2);
+		kill(admin_pid, SIGINT);
 	}
-	if (adapter_pid > 0) {
+	if (adapter_server_pid > 0) {
 		CINE_LOG("Cerrando SOCKET_ADAPTER...\n");
-		kill(adapter_pid, SIGUSR2);
+		kill(adapter_server_pid, SIGINT);
 	}
-	CINE_LOG("Proceso finalizado\n");
+	CINE_LOG("CINE_LOGIN finalizado\n");
 	exit(0);
 }
 
 void handler(int signal) {
-	salir();
+	// El SIGINT lo reciben tb el admin y el cine, asi q no hace falta cerrarlos desde aca
+	CINE_LOG("CINE_LOGIN finalizado\n");
+	exit(0);
 }
 
 int main(int argc, char* argv[]) {
@@ -62,14 +64,14 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    adapter_pid = fork();
-    if (adapter_pid == -1) {
-    	CINE_LOG("Falló el fork del socket_adapter\n");
+    adapter_server_pid = fork();
+    if (adapter_server_pid == -1) {
+    	CINE_LOG("Falló el fork del socket_adapter_server\n");
     	salir();
     }
-    else if (adapter_pid == 0) {
-        execl("./socket_adapter_cine", "socket_adapter_cine", argv[ARG_PORT_ADDR] ,NULL);
-        perror("Error al iniciar el socket_adapter\n");
+    else if (adapter_server_pid == 0) {
+        execl("./socket_adapter_cine_server", "socket_adapter_cine_server", argv[ARG_PORT_ADDR] ,NULL);
+        perror("Error al iniciar el socket_adapter_server\n");
         exit(1);
     }
 

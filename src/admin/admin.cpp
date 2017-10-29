@@ -10,7 +10,7 @@
 #define ADMIN_LOG(fmt, ...) FPRINTF(stdout, KGRN, fmt, ##__VA_ARGS__)
 
 void salir() {
-	ADMIN_LOG("Proceso finalizado\n");
+	ADMIN_LOG("ADMIN finalizado\n");
 	exit(0);
 }
 
@@ -89,7 +89,7 @@ void cargar_datos(int n_salas, int n_asientos_salas[MAX_SALAS], int asientos_sal
 }
 
 int main(int argc, char *argv[]) {
-	signal(SIGUSR2, handler);
+	signal(SIGINT, handler);
     srand(time(NULL));
     int n_salas = 1 + (rand() % MAX_SALAS);			// Cantidad de salas que hay en total
     int n_asientos_salas[MAX_SALAS];				// Cantidad de asientos que hay en cada sala

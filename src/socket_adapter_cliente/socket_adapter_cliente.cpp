@@ -12,18 +12,19 @@
 #define ARG_PORT_ADDR	3
 #define N_ARGS			4
 
-#define SOCK_CLI_LOG(fmt, ...) FPRINTF(stdout, KCYN, "[ADAPTER_%i] " fmt, getpid() , ##__VA_ARGS__)
-
-#define _DEBUG
-#ifdef _DEBUG
-#define SOCK_CLI_LOG_DEBUG(fmt, ...) FPRINTF(stdout, KCYN, "[ADAPTER_%i] " fmt, getpid() , ##__VA_ARGS__)
-#else
-#define SOCK_CLI_LOG_DEBUG(fmt, ...)
-#endif
+#define SOCK_CLI_LOG(fmt, ...) FPRINTF(stdout, KCYN, "[ADAPTER_%li] " fmt, cli_id , ##__VA_ARGS__)
+#define SOCK_CLI_SEND_LOG(fmt, ...) FPRINTF(stdout, KCYN, "[ADAPTER_SEND_%li] " fmt, cli_id , ##__VA_ARGS__)
+#define SOCK_CLI_RCV_LOG(fmt, ...) FPRINTF(stdout, KCYN, "[ADAPTER_RECV_%li] " fmt, cli_id , ##__VA_ARGS__)
 
 static int sock_id = -1;
+static uuid_t cli_id = -1;
+static pid_t send_pid = -1;
 
 void salir() {
+	if (send_pid > 0) {
+		kill(send_pid, SIGTERM);
+	}
+
 	if (sock_id > 0) {
 		close(sock_id);
 	}
@@ -40,11 +41,17 @@ int main(int argc, char *argv[]) {
     	SOCK_CLI_LOG("Uso: %s <cli_id> <serv_addr> <serv_port>\n", argv[0]);
         exit(1);
     }
-	signal(SIGUSR2, handler);
+
+    struct sigaction sigchld;
+    sigchld.sa_handler = SIG_DFL;
+    sigchld.sa_flags = SA_NOCLDWAIT;
+    sigemptyset(&sigchld.sa_mask);
+    sigaction(SIGCHLD, &sigchld, NULL);
+	signal(SIGINT, handler);	// Al hacer fork y no hacer exec, los hijos heredan el registro del handler
 
     char *serv_addr = argv[ARG_SERV_ADDR];
     uint16_t serv_port = std::stoi(argv[ARG_PORT_ADDR]);
-    const uuid_t cli_id = std::atol(argv[ARG_CLI_ID]);
+    cli_id = std::atol(argv[ARG_CLI_ID]);
 
     SOCK_CLI_LOG("Atiendo cliente %li\n", cli_id);
 
@@ -68,12 +75,21 @@ int main(int argc, char *argv[]) {
     }
     SOCK_CLI_LOG("Conexion a %s:%hu establecida\n", serv_addr, serv_port);
 
+    send_pid = fork();
+
+    if (send_pid == -1) {
+    	SOCK_CLI_LOG("Error en fork!\n");
+    	salir();
+    }
+
     mensaje_t msg;
-    if (fork() == 0) {
+    if (send_pid == 0) {
         // Proceso que envía
+    	signal(SIGINT, SIG_IGN);	// Para no cerrarlo con el CTRL+C. Lo cierra el padre
+
         while (true) {
             msg_queue_receive(q_mom_rcv, cli_id, &msg);
-            SOCK_CLI_LOG_DEBUG("EEE Recibí pedido %s del cliente\n", strOpType(msg.tipo));
+            SOCK_CLI_SEND_LOG("Recibí pedido %s del cliente\n", strOpType(msg.tipo));
 
             /* Esto tengo que ponerlo aca, aunque esta logica no deberia pertenecer al adapter.
              * Pero si me viniese el mtype=LOGIN_MSG_TYPE desde el mom, el adapter no lo recibiria nunca */
@@ -82,11 +98,10 @@ int main(int argc, char *argv[]) {
             }
 
             if (sock_send(sock_id, &msg) != sizeof(msg)) {
-                SOCK_CLI_LOG("Error al enviar mensaje al cine - %s\n", std::strerror(errno));
-//          salir();
+            	SOCK_CLI_SEND_LOG("Error al enviar mensaje al cine - %s\n", std::strerror(errno));
                 continue;
             }
-            SOCK_CLI_LOG_DEBUG("Envié pedido %s al cine\n", strOpType(msg.tipo));
+            SOCK_CLI_SEND_LOG("Envié pedido %s al cine\n", strOpType(msg.tipo));
         }
 
     } else {
@@ -94,26 +109,25 @@ int main(int argc, char *argv[]) {
         while (true) {
             int bytesRec = sock_recv(sock_id, &msg);
             if (bytesRec == 0) {
-                // Desconexion del peer
+            	// Desconexion del peer. El cine no deberia iniciar un cierre
+            	SOCK_CLI_RCV_LOG("Socket remoto cerrado (no deberia entrar aca)\n");
                 salir();
             } else if (bytesRec != sizeof(msg)) {
-                SOCK_CLI_LOG("Error al recibir mensaje del cine - %s\n", std::strerror(errno));
-//          salir();
+            	SOCK_CLI_RCV_LOG("Error al recibir mensaje del cine - %s\n", std::strerror(errno));
                 continue;
             }
-            SOCK_CLI_LOG_DEBUG("CCC Recibí respuesta %s del cine\n", strOpType(msg.tipo));
-            // Si es una respuesta del cine, mandar a la cola común
 
             if (msg.tipo == NOTIFICAR_CAMBIOS) {
                 // Si es una notificacion del admin, mandar el mensaje a la cola de notificaciones
-                SOCK_CLI_LOG_DEBUG("############ RECIBI NOTIFICACION %s\n", strOpType(msg.tipo));
+            	SOCK_CLI_RCV_LOG("Recibí notificación de asientos en sala %i\n", strOpType(msg.op.info_asientos.nro_sala));
                 msg_queue_send(q_admin_rcv, &msg);
+                SOCK_CLI_RCV_LOG("Envié notificación al cliente\n");
             } else {
+            	// Si es una respuesta del cine, mandar a la cola común
+            	SOCK_CLI_RCV_LOG("Recibí respuesta %s del cine\n", strOpType(msg.tipo));
                 msg_queue_send(q_mom_snd, &msg);
+                SOCK_CLI_RCV_LOG("Envié respuesta %s al cliente\n", strOpType(msg.tipo));
             }
-
-            SOCK_CLI_LOG_DEBUG("Envié respuesta %s al cliente\n", strOpType(msg.tipo));
         }
-
     }
 }
