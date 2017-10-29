@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
 
             if (msg.tipo == NOTIFICAR_CAMBIOS) {
                 // Si es una notificacion del admin, mandar el mensaje a la cola de notificaciones
-            	SOCK_CLI_RCV_LOG("Recibí notificación de asientos en sala %i\n", strOpType(msg.op.info_asientos.nro_sala));
+            	SOCK_CLI_RCV_LOG("Recibí notificación de asientos en sala %i\n", msg.op.info_asientos.nro_sala);
                 msg_queue_send(q_admin_rcv, &msg);
                 SOCK_CLI_RCV_LOG("Envié notificación al cliente\n");
             } else {
